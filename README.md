@@ -7,6 +7,7 @@ It reports the metric data to CloudWatch asynchronously using the [AmazonCloudWa
 ## Table of Contents
 
   - [Defaults](#defaults)
+  - [Dependencies](#dependencies)
   - [Credits](#credits)
   - [Usage](#usage)
 
@@ -27,6 +28,16 @@ The Reporter provides all the same options that the [GraphiteReporter](http://me
 | 1-min-mean-rate-in-seconds       | com.example.component.OtherComponent.arbitrary-other-timer      |
 | 95%                              | com.example.component.SomeComponent.arbitrary-some-timer        |
 | 95%                              | com.example.component.OtherComponent.arbitrary-other-timer      |
+
+
+### Dependencies
+```
+dependencies { 
+    compile("io.dropwizard.metrics:metrics-core:3.1.0")
+    compile("com.amazonaws:aws-java-sdk-cloudwatch:1.11.41")
+    compile("com.google.guava:guava:19.0")
+}
+```
 
 
 ### Usage
