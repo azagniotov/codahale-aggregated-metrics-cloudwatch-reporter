@@ -13,7 +13,7 @@ It reports the metric data to CloudWatch asynchronously using the [AmazonCloudWa
 
 ### Defaults
 
-The Reporter provides all the same options that the [GraphiteReporter](http://metrics.dropwizard.io/3.1.0/manual/graphite/) does. By default:
+The Reporter uses the following defaults which are `not` configurable at this stage:
 
 - There is no prefix on the Metrics
 - Rate metrics are in `TimeUnit.Seconds`
