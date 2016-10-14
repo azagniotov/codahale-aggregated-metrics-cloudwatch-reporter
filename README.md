@@ -2,7 +2,7 @@
 
 This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (formerly CodaHale & Yammer Metrics). The reporter is an implementation of [ScheduledReporter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/ScheduledReporter.html) from Dropwizard Metrics v3.1. 
 
-It reports the metric data to CloudWatch asynchronously using the [AmazonCloudWatchAsyncClient (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/AmazonCloudWatchAsyncClient.html) interface. Each aggregated value in a metric reported individually to CloudWatch.
+It reports the metric data to CloudWatch asynchronously using the [AmazonCloudWatchAsyncClient (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/AmazonCloudWatchAsyncClient.html) interface. Each value in CodeHale [Metric](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Metric.html) is reported as a separate [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html)
 
 ## Table of Contents
 
@@ -19,7 +19,6 @@ The Reporter provides all the same options that the [GraphiteReporter](http://me
 - Duration metrics are in `TimeUnit.Milliseconds`
 - `MetricFilter.ALL` will be used for the Filter
 - `Clock.defaultClock()` will be used for the Clock
-- Each aggregated CodaHale Metric is reported as a separate [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html)
 - The reporter adds a `Type` [Dimension (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/Dimension.html) to each reported metric as follows:
 
 | Type                             | Metric Name                                                     |
