@@ -8,8 +8,9 @@ It reports the metric data to CloudWatch asynchronously using the [AmazonCloudWa
 
   - [Defaults](#defaults)
   - [Dependencies](#dependencies)
-  - [Credits](#credits)
   - [Usage](#usage)
+  - [Credits](#credits)
+  - [License](#license)
 
 ### Defaults
 
@@ -49,3 +50,7 @@ The reporter provides a fine-graned configuration options through its builder to
 * https://github.com/tptodorov/metrics-cloudwatch
 * https://github.com/basis-technology-corp/metrics-cloudwatch-reporter
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
+
+
+### License
+MIT
