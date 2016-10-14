@@ -1,6 +1,9 @@
 # CodaHale Aggregated Metrics CloudWatch Reporter
-ScheduledReporter implementation from Codahale Metrics to Amazon CloudWatch
+Implementation of ScheduledReporter from Codahale Metrics v3.x to Amazon CloudWatch
 
+### Table of Contents
+
+COMING VERY SOON...
 
 ### Inspired By
 * https://github.com/blacklocus/metrics-cloudwatch
