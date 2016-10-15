@@ -6,6 +6,8 @@ It reports the metric data to CloudWatch asynchronously using the [AmazonCloudWa
 
 Each value in CodeHale [Metric](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Metric.html) is reported as a separate [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html). Each [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html) translated into [StatisticSet (AWS)] (http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html) in the most direct way possible.
 
+When reporting [Meter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Meter.html), [Counter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html) count metrics as [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html), only difference since last report is reported. These counts are obtained by invoking `getCount()` on the former classes.
+
 ## Table of Contents
 
   - [Defaults](#defaults)
@@ -16,13 +18,13 @@ Each value in CodeHale [Metric](http://metrics.dropwizard.io/3.1.0/apidocs/com/c
 
 ### Defaults
 
-The Reporter uses the following defaults which are `not` configurable at this stage:
+The Reporter uses the following defaults which can be configured:
 
-- There is no prefix on the Metrics
 - Rate metrics are in `TimeUnit.Seconds`
 - Duration metrics are in `TimeUnit.Milliseconds`
 - `MetricFilter.ALL` will be used for the Filter
 - `Clock.defaultClock()` will be used for the Clock
+- Empty global [Dimension (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/Dimension.html) list
 - The reporter adds a `Type` [Dimension (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/Dimension.html) to each reported metric as follows:
 
 | Type                             | Metric Name                                                     |
