@@ -2,19 +2,22 @@
 
 This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (formerly CodaHale & Yammer Metrics). The reporter is an implementation of [ScheduledReporter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/ScheduledReporter.html) from Dropwizard Metrics v3.1. 
 
-It reports the metric data to CloudWatch asynchronously using the [AmazonCloudWatchAsyncClient (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/AmazonCloudWatchAsyncClient.html) interface. 
-
-Each value in CodeHale [Metric](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Metric.html) is reported as a separate [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html). Each [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html) translated into [StatisticSet (AWS)] (http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html) in the most direct way possible.
-
-When reporting [Meter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Meter.html), [Counter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html) count metrics as [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html), only difference since last report is reported. These counts are obtained by invoking `getCount()` on the former classes.
-
 ## Table of Contents
 
+  - [Summary](#summary)
   - [Defaults](#defaults)
   - [Dependencies](#dependencies)
   - [Usage](#usage)
   - [Credits](#credits)
   - [License](#license)
+
+### Summary
+
+This CloudWatchReporter reports the metric data to CloudWatch asynchronously using the [AmazonCloudWatchAsyncClient (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/AmazonCloudWatchAsyncClient.html) interface. 
+
+Each value in CodeHale [Metric](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Metric.html) is reported as a separate [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html). Each [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html) translated into [StatisticSet (AWS)] (http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html) in the most direct way possible.
+
+When reporting [Meter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Meter.html), [Counter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html) count metrics (`getCount()`) as [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html), only the count difference since last report is reported. This way the counters do not require a reset within the application using this reporter.
 
 ### Defaults
 
