@@ -53,6 +53,10 @@ dependencies {
 
 The reporter provides a fine-graned configuration options through its builder to configure what metrics should be reported to CloudWatch. Since AWS costs money, you probably do not want to report `all` the values from [Meter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Meter.html) or [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html), but only what's really useful to you
 
+
+!!!TO BE ADDED!!!
+
+
 #### Dry run
 The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun()` on the `Builder`. In that case, the reporter will `log.DEBUG` the created instance of [PutMetricDataRequest (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/PutMetricDataRequest.html), instead of doing a real `POST` to CloudWatch. 
 
