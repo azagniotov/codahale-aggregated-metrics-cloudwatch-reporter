@@ -207,7 +207,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                                   final String dimensionValue,
                                   final List<MetricDatum> metricData) {
         if (metricConfigured) {
-            final List<Dimension> dimensions = new ArrayList<>();
+            final Collection<Dimension> dimensions = new ArrayList<>();
             dimensions.addAll(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
 
@@ -326,7 +326,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         private TimeUnit durationUnit;
         private StandardUnit cwRateUnit;
         private StandardUnit cwDurationUnit;
-        private List<Dimension> globalDimensions;
+        private Collection<Dimension> globalDimensions;
         private final Clock clock;
 
         private Builder(final MetricRegistry metricRegistry, final AmazonCloudWatchAsync cloudWatchAsyncClient, final String namespace) {
@@ -336,10 +336,10 @@ public class CloudWatchReporter extends ScheduledReporter {
             this.percentiles = new Percentile[]{Percentile.P75, Percentile.P95, Percentile.P999};
             this.metricFilter = MetricFilter.ALL;
             this.rateUnit = TimeUnit.SECONDS;
-            this.cwRateUnit = StandardUnit.Seconds;
             this.durationUnit = TimeUnit.MILLISECONDS;
-            this.cwDurationUnit = StandardUnit.Milliseconds;
             this.globalDimensions = new ArrayList<>();
+            this.cwRateUnit = toStandardUnit(rateUnit);
+            this.cwDurationUnit = toStandardUnit(durationUnit);
             this.clock = Clock.defaultClock();
         }
 
@@ -494,9 +494,11 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
 
         /**
-         * Global {@link Dimension} to send with each {@link MetricDatum}. Defaults to {@code empty} {@link Map}
+         * Global {@link Collection} of {@link Dimension} to send with each {@link MetricDatum}.
+         * Defaults to {@code empty} {@link Collection}.
          *
-         * @param dimensions the {@link Map} of name to value {@link Dimension} pairs
+         * @param dimensions the {@link Map} of name-to-value {@link String} pairs. Each pair will be converted to
+         *                   an instance of {@link Dimension}
          * @return {@code this}
          */
         public Builder withGlobalDimensions(final Map<String, String> dimensions) {
