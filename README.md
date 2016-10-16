@@ -52,6 +52,7 @@ The Reporter uses the following defaults which can be configured:
 ```
 dependencies { 
     compile("io.dropwizard.metrics:metrics-core:3.1.0")
+    compile("io.dropwizard.metrics:metrics-jvm:3.1.0")
     compile("com.amazonaws:aws-java-sdk-cloudwatch:1.11.41")
     compile("com.google.guava:guava:19.0")
 }
