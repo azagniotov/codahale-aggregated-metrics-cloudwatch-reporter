@@ -72,10 +72,10 @@ dependencies {
 The library fetches the following transitive dependencies:
 
 ```
-    compile("io.dropwizard.metrics:metrics-core:3.1.0")
-    compile("io.dropwizard.metrics:metrics-jvm:3.1.0")
-    compile("com.amazonaws:aws-java-sdk-cloudwatch:1.11.41")
-    compile("com.google.guava:guava:19.0")
+    io.dropwizard.metrics:metrics-core:3.1.0
+    io.dropwizard.metrics:metrics-jvm:3.1.0
+    com.amazonaws:aws-java-sdk-cloudwatch:1.11.41
+    com.google.guava:guava:19.0
 ```
 
 
