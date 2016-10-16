@@ -1,0 +1,16 @@
+*.class
+*.log
+*.swp
+.gradle/*
+target/*
+.classpath
+build/*
+out/*
+.idea/*
+.DS_Store
+Thumbs.db
+*.jar
+*.war
+*.ear
+*.iml
+
