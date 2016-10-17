@@ -16,7 +16,6 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metered;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Sampling;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
@@ -132,7 +131,7 @@ public class CloudWatchReporter extends ScheduledReporter {
             for (final Map.Entry<String, Timer> timerEntry : timers.entrySet()) {
                 processCounter(timerEntry.getKey(), timerEntry.getValue(), metricData);
                 processMeter(timerEntry.getKey(), timerEntry.getValue(), metricData);
-                processHistogram(timerEntry.getKey(), timerEntry.getValue(), metricData);
+                processTimer(timerEntry.getKey(), timerEntry.getValue(), metricData);
             }
 
             final Iterable<List<MetricDatum>> metricDataPartitions = Iterables.partition(metricData, MAXIMUM_DATUMS_PER_REQUEST);
@@ -214,8 +213,8 @@ public class CloudWatchReporter extends ScheduledReporter {
         stageMetricDatum(builder.withMeanRate, metricName, convertRate(meter.getMeanRate()), rateUnit, "mean" + dimensionValue, metricData);
     }
 
-    private void processHistogram(final String metricName, final Sampling sampling, final List<MetricDatum> metricData) {
-        final Snapshot snapshot = sampling.getSnapshot();
+    private void processTimer(final String metricName, final Timer timer, final List<MetricDatum> metricData) {
+        final Snapshot snapshot = timer.getSnapshot();
         // Only submit metrics that show some data - let's save some money!
         if (snapshot.size() > 0) {
             final String dimensionValue = String.format(" [in-%s]", getDurationUnit());
@@ -228,6 +227,22 @@ public class CloudWatchReporter extends ScheduledReporter {
             }
 
             stageMetricDatum(builder.withStatisticSet, metricName, snapshot, durationUnit, "snapshot-summary", metricData);
+        }
+    }
+
+    private void processHistogram(final String metricName, final Histogram histogram, final List<MetricDatum> metricData) {
+        final Snapshot snapshot = histogram.getSnapshot();
+        // Only submit metrics that show some data - let's save some money!
+        if (snapshot.size() > 0) {
+            stageMetricDatum(builder.withArithmeticMean, metricName, snapshot.getMean(), StandardUnit.None, "snapshot-mean", metricData);
+            stageMetricDatum(builder.withStdDev, metricName, snapshot.getStdDev(), StandardUnit.None, "snapshot-std-dev", metricData);
+
+            for (final Percentile percentile : builder.percentiles) {
+                final double value = snapshot.getValue(percentile.getQuantile());
+                stageMetricDatum(true, metricName, value, StandardUnit.None, percentile.getDesc(), metricData);
+            }
+
+            stageMetricDatum(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, "snapshot-summary", metricData);
         }
     }
 
@@ -471,7 +486,8 @@ public class CloudWatchReporter extends ScheduledReporter {
          * If the arithmetic mean of {@link Snapshot} values in {@link Histogram} and {@link Timer} should be sent.
          * {@code false} by default.
          * <p>
-         * The {@link Snapshot} duration values are converted before reporting based on the duration unit set
+         * The {@link Timer#getSnapshot()} values are converted before reporting based on the duration unit set
+         * The {@link Histogram#getSnapshot()} values are reported as is
          *
          * @return {@code this}
          * @see ScheduledReporter#convertDuration(double)
@@ -486,7 +502,8 @@ public class CloudWatchReporter extends ScheduledReporter {
          * If the standard deviation of {@link Snapshot} values in {@link Histogram} and {@link Timer} should be sent.
          * {@code false} by default.
          * <p>
-         * The {@link Snapshot} duration values are converted before reporting based on the duration unit set
+         * The {@link Timer#getSnapshot()} values are converted before reporting based on the duration unit set
+         * The {@link Histogram#getSnapshot()} values are reported as is
          *
          * @return {@code this}
          * @see ScheduledReporter#convertDuration(double)
@@ -543,6 +560,9 @@ public class CloudWatchReporter extends ScheduledReporter {
         /**
          * The {@link Histogram} and {@link Timer} percentiles to send. If <code>0.5</code> is included, it'll be
          * reported as <code>median</code>.This defaults to <code>0.75, 0.95 and 0.999</code>.
+         * <p>
+         * The {@link Timer#getSnapshot()} percentile values are converted before reporting based on the duration unit
+         * The {@link Histogram#getSnapshot()} percentile values are reported as is
          *
          * @param percentiles the percentiles to send. Replaces the default percentiles.
          * @return {@code this}
