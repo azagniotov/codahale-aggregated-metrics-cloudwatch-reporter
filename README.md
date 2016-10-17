@@ -28,13 +28,14 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 
 ### Reportables
 
-Currently the only reportable metrics are:
+Currently the only metric values that are reportable through configuration are:
 
 - Values of type `Number` from [Gauge](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Gauge.html)
 - Counts from [Counter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html), [Meter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Meter.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html)
-- Percentiles from [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html)
+- Percentiles from [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html) in [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html)
+- Arithmetic mean & standard deviation of [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html) values in [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html)
 - Mean rates from [Meter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Meter.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html)
-- Summaries of [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html) from [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html) as [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html)
+- Summaries of [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html) values in [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html) as [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html)
 
 ### Defaults
 
@@ -90,16 +91,22 @@ The reporter provides a fine-grained configuration options through its builder t
     amazonCloudWatchAsync.setRegion(Region.getRegion(Regions.US_WEST_2));
 
     final CloudWatchReporter cloudWatchReporter =
-            CloudWatchReporter.forRegistry(metricRegistry, amazonCloudWatchAsync, Main.class.getName())
-                    .withPercentiles(Percentile.P75, Percentile.P99)
-                    .withOneMinuteMeanRate()
-                    .withStatisticSet()
-                    .withJvmMetrics()
-                    .withGlobalDimensions(new HashMap<String, String>() {{
-                        put("Region", Regions.US_WEST_2.getName());
-                    }})
-                    .withDryRun()
-                    .build();
+        CloudWatchReporter.forRegistry(metricRegistry, amazonCloudWatchAsync, Main.class.getName())
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .filter(MetricFilter.ALL)
+                .withPercentiles(Percentile.P75, Percentile.P99)
+                .withOneMinuteMeanRate()
+                .withFiveMinuteMeanRate()
+                .withFifteenMinuteMeanRate()
+                .withMeanRate()
+                .withArithmeticMean()
+                .withStdDev()
+                .withStatisticSet()
+                .withJvmMetrics()
+                .withGlobalDimensions("Region=us-west-2", "Instance=stage")
+                .withDryRun()
+                .build();
 
     cloudWatchReporter.start(10, TimeUnit.SECONDS);
 ```
