@@ -51,17 +51,19 @@ The Reporter uses the following defaults which can be configured:
 | Type                                      | Metric Name                                                     |
 | ----------------------------------------- | --------------------------------------------------------------- |
 | 1-min-mean-rate   [per-second]            | com.example.component.SomeComponent.timer                       |
-| 5-min-mean-rate   [per-second]            | com.example.component.SomeComponent.timer                       |
 | snapshot-mean     [in-milliseconds]       | com.example.component.SomeComponent.timer                       |
 | snapshot-mean                             | com.example.component.SomeComponent.histogram                   |
-| snapshot-std-dev  [in-milliseconds]       | com.example.component.SomeComponent.timer                       |
-| snapshot-std-dev                          | com.example.component.SomeComponent.histogram                   |
 | 95%                                       | com.example.component.SomeComponent.timer                       |
-| 95%                                       | com.example.component.SomeComponent.histogram                   |
 | 99.5%                                     | com.example.component.SomeComponent.timer                       |
 | 99.5%                                     | com.example.component.SomeComponent.histogram                   |
 | count                                     | com.example.component.SomeComponent.counter                     |
-| count                                     | com.example.component.SomeComponent.timer                       |
+
+The __only__ metrics that are reportable __by default__  are:
+
+- Count values (`getCount()`) from [Meter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Meter.html), [Counter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html) 
+- Percentile values (`75%`, `95%`, `99.9%`) from [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html)
+
+All other metrics have to be confugured for reporting by invoking their respective `withXXXX()` methods on the `CloudWatchReporter.Builder` instance
 
 
 ### Dependencies
@@ -91,12 +93,7 @@ The library fetches the following transitive dependencies:
 
 ### Usage
 
-The reporter provides a fine-grained configuration options through its builder to configure what metrics should be reported to CloudWatch. Since AWS costs money, you probably do not want to report `all` the values from [Metric](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Metric.html) classes or [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html), but only what's really useful to you. The __only__ metrics that are reportable __by default__  are:
-
-- Count values (`getCount()`) from [Meter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Meter.html), [Counter](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html) 
-- Percentile values (`75%`, `95%`, `99.9%`) from [Histogram](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Timer.html)
-
-All other metrics have to be confugured for reporting by invoking their respective `withXXXX()` methods on the `CloudWatchReporter.Builder` instance
+The reporter provides a fine-grained configuration options through its builder to configure what metrics should be reported to CloudWatch. Since AWS costs money, you probably do not want to report `all` the values from [Metric](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Metric.html) classes or [Snapshot](http://metrics.dropwizard.io/3.1.0/apidocs/com/codahale/metrics/Snapshot.html), but only what's really useful to you.
 
 
 ```
