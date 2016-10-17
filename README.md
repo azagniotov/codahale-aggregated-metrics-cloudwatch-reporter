@@ -72,7 +72,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.1")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.2")
 }
 ```
 
