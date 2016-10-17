@@ -2,12 +2,12 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClient;
+import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter;
 import io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.Percentile;
 
-import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,13 +45,19 @@ public class Main {
 
             final CloudWatchReporter cloudWatchReporter =
                     CloudWatchReporter.forRegistry(metricRegistry, amazonCloudWatchAsync, Main.class.getName())
+                            .convertRatesTo(TimeUnit.SECONDS)
+                            .convertDurationsTo(TimeUnit.MILLISECONDS)
+                            .filter(MetricFilter.ALL)
                             .withPercentiles(Percentile.P75, Percentile.P99)
                             .withOneMinuteMeanRate()
+                            .withFiveMinuteMeanRate()
+                            .withFifteenMinuteMeanRate()
+                            .withMeanRate()
+                            .withArithmeticMean()
+                            .withStdDev()
                             .withStatisticSet()
                             .withJvmMetrics()
-                            .withGlobalDimensions(new HashMap<String, String>() {{
-                                put("Region", Regions.US_WEST_2.getName());
-                            }})
+                            .withGlobalDimensions("Region=us-west-2", "Instance=stage")
                             .withDryRun()
                             .build();
 

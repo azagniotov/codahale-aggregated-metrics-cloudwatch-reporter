@@ -1,21 +1,48 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
-import com.amazonaws.services.cloudwatch.model.*;
-import com.codahale.metrics.*;
+import com.amazonaws.services.cloudwatch.model.Dimension;
+import com.amazonaws.services.cloudwatch.model.MetricDatum;
+import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
+import com.amazonaws.services.cloudwatch.model.PutMetricDataResult;
+import com.amazonaws.services.cloudwatch.model.StandardUnit;
+import com.amazonaws.services.cloudwatch.model.StatisticSet;
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Counting;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metered;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Sampling;
+import com.codahale.metrics.ScheduledReporter;
+import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import com.codahale.metrics.jvm.*;
+import com.codahale.metrics.jvm.BufferPoolMetricSet;
+import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
+import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 /**
@@ -180,7 +207,7 @@ public class CloudWatchReporter extends ScheduledReporter {
     }
 
     private void processMeter(final String metricName, final Metered meter, final List<MetricDatum> metricData) {
-        final String dimensionValue = String.format("-rate [in-%ss]", getRateUnit());
+        final String dimensionValue = String.format("-rate [per-%s]", getRateUnit());
         stageMetricDatum(builder.withOneMinuteMeanRate, metricName, convertRate(meter.getOneMinuteRate()), rateUnit, "1-min-mean" + dimensionValue, metricData);
         stageMetricDatum(builder.withFiveMinuteMeanRate, metricName, convertRate(meter.getFiveMinuteRate()), rateUnit, "5-min-mean" + dimensionValue, metricData);
         stageMetricDatum(builder.withFifteenMinuteMeanRate, metricName, convertRate(meter.getFifteenMinuteRate()), rateUnit, "15-min-mean" + dimensionValue, metricData);
@@ -191,6 +218,10 @@ public class CloudWatchReporter extends ScheduledReporter {
         final Snapshot snapshot = sampling.getSnapshot();
         // Only submit metrics that show some data - let's save some money!
         if (snapshot.size() > 0) {
+            final String dimensionValue = String.format(" [in-%s]", getDurationUnit());
+            stageMetricDatum(builder.withArithmeticMean, metricName, convertDuration(snapshot.getMean()), durationUnit, "snapshot-mean" + dimensionValue, metricData);
+            stageMetricDatum(builder.withStdDev, metricName, convertDuration(snapshot.getStdDev()), durationUnit, "snapshot-std-dev" + dimensionValue, metricData);
+
             for (final Percentile percentile : builder.percentiles) {
                 final double convertedDuration = convertDuration(snapshot.getValue(percentile.getQuantile()));
                 stageMetricDatum(true, metricName, convertedDuration, durationUnit, percentile.getDesc(), metricData);
@@ -207,8 +238,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                                   final String dimensionValue,
                                   final List<MetricDatum> metricData) {
         if (metricConfigured) {
-            final Collection<Dimension> dimensions = new ArrayList<>();
-            dimensions.addAll(builder.globalDimensions);
+            final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
 
             metricData.add(new MetricDatum()
@@ -234,8 +264,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                     .withMinimum(convertDuration(snapshot.getMin()))
                     .withMaximum(convertDuration(snapshot.getMax()));
 
-            final List<Dimension> dimensions = new ArrayList<>();
-            dimensions.addAll(builder.globalDimensions);
+            final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
 
             metricData.add(new MetricDatum()
@@ -318,6 +347,8 @@ public class CloudWatchReporter extends ScheduledReporter {
         private boolean withFiveMinuteMeanRate;
         private boolean withFifteenMinuteMeanRate;
         private boolean withMeanRate;
+        private boolean withArithmeticMean;
+        private boolean withStdDev;
         private boolean withDryRun;
         private boolean withStatisticSet;
         private boolean withJvmMetrics;
@@ -326,7 +357,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         private TimeUnit durationUnit;
         private StandardUnit cwRateUnit;
         private StandardUnit cwDurationUnit;
-        private Collection<Dimension> globalDimensions;
+        private Set<Dimension> globalDimensions;
         private final Clock clock;
 
         private Builder(final MetricRegistry metricRegistry, final AmazonCloudWatchAsync cloudWatchAsyncClient, final String namespace) {
@@ -337,7 +368,7 @@ public class CloudWatchReporter extends ScheduledReporter {
             this.metricFilter = MetricFilter.ALL;
             this.rateUnit = TimeUnit.SECONDS;
             this.durationUnit = TimeUnit.MILLISECONDS;
-            this.globalDimensions = new ArrayList<>();
+            this.globalDimensions = new LinkedHashSet<>();
             this.cwRateUnit = toStandardUnit(rateUnit);
             this.cwDurationUnit = toStandardUnit(durationUnit);
             this.clock = Clock.defaultClock();
@@ -377,7 +408,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
 
         /**
-         * If the one minute rate should be sent for {@link Meter} and {@link Timer}. Disabled by default.
+         * If the one minute rate should be sent for {@link Meter} and {@link Timer}. {@code false} by default.
          * <p>
          * The rate values are converted before reporting based on the rate unit set
          *
@@ -392,7 +423,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
 
         /**
-         * If the five minute rate should be sent for {@link Meter} and {@link Timer}. Disabled by default.
+         * If the five minute rate should be sent for {@link Meter} and {@link Timer}. {@code false} by default.
          * <p>
          * The rate values are converted before reporting based on the rate unit set
          *
@@ -407,7 +438,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
 
         /**
-         * If the fifteen minute rate should be sent for {@link Meter} and {@link Timer}. Disabled by default.
+         * If the fifteen minute rate should be sent for {@link Meter} and {@link Timer}. {@code false} by default.
          * <p>
          * The rate values are converted before reporting based on the rate unit set
          *
@@ -422,7 +453,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
 
         /**
-         * If the mean rate should be sent for {@link Meter} and {@link Timer}. Disabled by default.
+         * If the mean rate should be sent for {@link Meter} and {@link Timer}. {@code false} by default.
          * <p>
          * The rate values are converted before reporting based on the rate unit set
          *
@@ -437,8 +468,38 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
 
         /**
+         * If the arithmetic mean of {@link Snapshot} values in {@link Histogram} and {@link Timer} should be sent.
+         * {@code false} by default.
+         * <p>
+         * The {@link Snapshot} duration values are converted before reporting based on the duration unit set
+         *
+         * @return {@code this}
+         * @see ScheduledReporter#convertDuration(double)
+         * @see Snapshot#getMean()
+         */
+        public Builder withArithmeticMean() {
+            withArithmeticMean = true;
+            return this;
+        }
+
+        /**
+         * If the standard deviation of {@link Snapshot} values in {@link Histogram} and {@link Timer} should be sent.
+         * {@code false} by default.
+         * <p>
+         * The {@link Snapshot} duration values are converted before reporting based on the duration unit set
+         *
+         * @return {@code this}
+         * @see ScheduledReporter#convertDuration(double)
+         * @see Snapshot#getStdDev()
+         */
+        public Builder withStdDev() {
+            withStdDev = true;
+            return this;
+        }
+
+        /**
          * If lifetime {@link Snapshot} summary of {@link Histogram} and {@link Timer} should be translated
-         * to {@link StatisticSet} in the most direct way possible and reported. Disabled by default.
+         * to {@link StatisticSet} in the most direct way possible and reported. {@code false} by default.
          * <p>
          * The {@link Snapshot} duration values are converted before reporting based on the duration unit set
          *
@@ -459,7 +520,7 @@ public class CloudWatchReporter extends ScheduledReporter {
          * - File descriptor usage
          * - Buffer pool sizes and utilization (Java 7 only)
          * <p>
-         * Disabled by default.
+         * {@code false} by default.
          *
          * @return {@code this}
          */
@@ -470,7 +531,7 @@ public class CloudWatchReporter extends ScheduledReporter {
 
         /**
          * Does not actually POST to CloudWatch, logs the {@link PutMetricDataRequest putMetricDataRequest} instead.
-         * Disabled by default.
+         * {@code false} by default.
          *
          * @return {@code this}
          */
@@ -494,18 +555,24 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
 
         /**
-         * Global {@link Collection} of {@link Dimension} to send with each {@link MetricDatum}.
-         * Defaults to {@code empty} {@link Collection}.
+         * Global {@link Set} of {@link Dimension} to send with each {@link MetricDatum}. A dimension is a name/value
+         * pair that helps you to uniquely identify a metric. Every metric has specific characteristics that describe
+         * it, and you can think of dimensions as categories for those characteristics.
+         * <p>
+         * Whenever you add a unique name/value pair to one of your metrics, you are creating a new metric.
+         * Defaults to {@code empty} {@link Set}.
          *
-         * @param dimensions the {@link Map} of name-to-value {@link String} pairs. Each pair will be converted to
-         *                   an instance of {@link Dimension}
+         * @param dimensions arguments in a form of {@code name=value}. The number of arguments is variable and may be
+         *                   zero. The maximum number of arguments is limited by the maximum dimension of a Java array
+         *                   as defined by the Java Virtual Machine Specification. Each {@code name=value} string
+         *                   will be converted to an instance of {@link Dimension}
          * @return {@code this}
          */
-        public Builder withGlobalDimensions(final Map<String, String> dimensions) {
-            this.globalDimensions.addAll(
-                    dimensions.entrySet().stream().map(
-                            entry -> new Dimension().withName(entry.getKey()).withValue(entry.getValue()))
-                            .collect(Collectors.toList()));
+        public Builder withGlobalDimensions(final String... dimensions) {
+            for (final String pair : dimensions) {
+                final List<String> splitted = Splitter.on('=').trimResults().splitToList(pair);
+                this.globalDimensions.add(new Dimension().withName(splitted.get(0)).withValue(splitted.get(1)));
+            }
             return this;
         }
 

@@ -50,14 +50,16 @@ The Reporter uses the following defaults which can be configured:
 
 | Type                                      | Metric Name                                                     |
 | ----------------------------------------- | --------------------------------------------------------------- |
-| 1-min-mean-rate [in-seconds]              | com.example.component.SomeComponent.arbitrary-some-timer        |
-| 1-min-mean-rate [in-seconds]              | com.example.component.OtherComponent.arbitrary-other-timer      |
-| 5-min-mean-rate [in-seconds]              | com.example.component.SomeComponent.arbitrary-some-timer        |
-| 5-min-mean-rate [in-seconds]              | com.example.component.OtherComponent.arbitrary-other-timer      |
-| 95%                                       | com.example.component.SomeComponent.arbitrary-some-timer        |
-| 95%                                       | com.example.component.OtherComponent.arbitrary-other-timer      |
-| 99.5%                                     | com.example.component.SomeComponent.arbitrary-some-timer        |
-| 99.5%                                     | com.example.component.OtherComponent.arbitrary-other-timer      |
+| 1-min-mean-rate   [per-second]            | com.example.component.SomeComponent.some-timer        |
+| 1-min-mean-rate   [per-second]            | com.example.component.OtherComponent.other-timer      |
+| snapshot-mean     [in-milliseconds]       | com.example.component.SomeComponent.some-timer        |
+| snapshot-mean     [in-milliseconds]       | com.example.component.OtherComponent.other-timer      |
+| snapshot-std-dev  [in-milliseconds]       | com.example.component.SomeComponent.some-timer        |
+| snapshot-std-dev  [in-milliseconds]       | com.example.component.OtherComponent.other-timer      |
+| 95%                                       | com.example.component.SomeComponent.some-timer        |
+| 95%                                       | com.example.component.OtherComponent.other-timer      |
+| 99.5%                                     | com.example.component.SomeComponent.some-timer        |
+| 99.5%                                     | com.example.component.OtherComponent.other-timer      |
 
 
 ### Dependencies
@@ -65,8 +67,12 @@ The Reporter uses the following defaults which can be configured:
 Gradle
 
 ```
+repositories {
+    mavenCentral()
+}
+
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.0")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.1")
 }
 ```
 
