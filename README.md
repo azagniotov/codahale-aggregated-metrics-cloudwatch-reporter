@@ -85,7 +85,7 @@ The library fetches the following transitive dependencies:
 ```
     io.dropwizard.metrics:metrics-core:3.1.0
     io.dropwizard.metrics:metrics-jvm:3.1.0
-    com.amazonaws:aws-java-sdk-cloudwatch:1.11.41
+    com.amazonaws:aws-java-sdk-cloudwatch:1.11.86
     com.google.guava:guava:19.0
 ```
 
