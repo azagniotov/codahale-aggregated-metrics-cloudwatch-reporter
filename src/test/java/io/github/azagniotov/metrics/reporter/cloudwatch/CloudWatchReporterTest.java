@@ -289,6 +289,21 @@ public class CloudWatchReporterTest {
     }
 
     @Test
+    public void shouldReportExpectedHistogramMaxAsIs() throws Exception {
+        metricRegistry.histogram("TheHistogram").update(1);
+        metricRegistry.histogram("TheHistogram").update(2);
+        metricRegistry.histogram("TheHistogram").update(3);
+        metricRegistry.histogram("TheHistogram").update(30);
+        reporterBuilder.withStatisticSet().build().report();
+
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
+
+        assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30);
+        assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1);
+        assertThat(metricData.getUnit()).isEqualTo("None");
+    }
+
+    @Test
     public void shouldReportExpectedTimerStdDevAsConvertedByDefaultDurationUnit() throws Exception {
         metricRegistry.timer("TheTimer").update(1000000, TimeUnit.NANOSECONDS);
         metricRegistry.timer("TheTimer").update(2000000, TimeUnit.NANOSECONDS);
@@ -309,8 +324,11 @@ public class CloudWatchReporterTest {
         final Optional<MetricDatum> metricDatumOptional =
                 metricData
                         .stream()
-                        .filter(metricDatum -> metricDatum.getDimensions()
-                                .contains(new Dimension().withName("Type").withValue(dimensionValue)))
+                        .filter(metricDatum -> {
+                            System.out.println(metricDatum.getDimensions());
+                            return metricDatum.getDimensions()
+                                .contains(new Dimension().withName("Type").withValue(dimensionValue));
+                        })
                         .findFirst();
 
         if (metricDatumOptional.isPresent()) {

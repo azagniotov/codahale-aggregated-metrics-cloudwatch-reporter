@@ -242,7 +242,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                 stageMetricDatum(true, metricName, value, StandardUnit.None, percentile.getDesc(), metricData);
             }
 
-            stageMetricDatum(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, "snapshot-summary", metricData);
+            stageHistorgramMtricStatisticSet(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, "snapshot-summary", metricData);
         }
     }
 
@@ -291,6 +291,31 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
     }
 
+    private void stageHistorgramMtricStatisticSet(final boolean metricConfigured,
+                                                  final String metricName,
+                                                  final Snapshot snapshot,
+                                                  final StandardUnit standardUnit,
+                                                  final String dimensionValue,
+                                                  final List<MetricDatum> metricData) {
+        if (metricConfigured) {
+            double scaledSum = LongStream.of(snapshot.getValues()).sum();
+            final StatisticSet statisticSet = new StatisticSet()
+                    .withSum(scaledSum)
+                    .withSampleCount((double) snapshot.size())
+                    .withMinimum((double) snapshot.getMin())
+                    .withMaximum((double) snapshot.getMax());
+
+            final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
+            dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
+
+            metricData.add(new MetricDatum()
+                    .withTimestamp(new Date(builder.clock.getTime()))
+                    .withMetricName(metricName)
+                    .withDimensions(dimensions)
+                    .withStatisticValues(statisticSet)
+                    .withUnit(standardUnit));
+        }
+    }
     private double cleanMetricValue(final double metricValue) {
         double absoluteValue = Math.abs(metricValue);
         if (absoluteValue < SMALLEST_SENDABLE_VALUE) {
