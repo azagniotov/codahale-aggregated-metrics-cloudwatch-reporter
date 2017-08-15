@@ -6,7 +6,9 @@ import com.amazonaws.services.cloudwatch.model.MetricDatum;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataResult;
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SlidingWindowReservoir;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -289,7 +291,7 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedHistogramMaxAsIs() throws Exception {
+    public void shouldReportExpectedHistogramMaxMinAsIs() throws Exception {
         metricRegistry.histogram("TheHistogram").update(1);
         metricRegistry.histogram("TheHistogram").update(2);
         metricRegistry.histogram("TheHistogram").update(3);
@@ -301,6 +303,41 @@ public class CloudWatchReporterTest {
         assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30);
         assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1);
         assertThat(metricData.getUnit()).isEqualTo("None");
+    }
+
+    @Test
+    public void shouldReportSubsequentMaxMinValues() throws Exception {
+        Histogram slidingWindowHistogram = new Histogram(new SlidingWindowReservoir(4));
+        metricRegistry.register("SlidingWindowHistogram", slidingWindowHistogram);
+
+        slidingWindowHistogram.update(1);
+        slidingWindowHistogram.update(2);
+        slidingWindowHistogram.update(30);
+        CloudWatchReporter reporter = reporterBuilder.withStatisticSet().build();
+        reporter.report();
+
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
+
+        assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30);
+        assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1);
+        assertThat(metricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(3);
+        assertThat(metricData.getStatisticValues().getSum().intValue()).isEqualTo(33);
+        assertThat(metricData.getUnit()).isEqualTo("None");
+
+        slidingWindowHistogram.update(4);
+        slidingWindowHistogram.update(100);
+        slidingWindowHistogram.update(5);
+        slidingWindowHistogram.update(6);
+        reporterBuilder.withStatisticSet().build().report();
+
+        final MetricDatum secondMetricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
+
+        assertThat(secondMetricData.getStatisticValues().getMaximum().intValue()).isEqualTo(100);
+        assertThat(secondMetricData.getStatisticValues().getMinimum().intValue()).isEqualTo(4);
+        assertThat(secondMetricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(4);
+        assertThat(secondMetricData.getStatisticValues().getSum().intValue()).isEqualTo(115);
+        assertThat(secondMetricData.getUnit()).isEqualTo("None");
+
     }
 
     @Test
@@ -324,11 +361,8 @@ public class CloudWatchReporterTest {
         final Optional<MetricDatum> metricDatumOptional =
                 metricData
                         .stream()
-                        .filter(metricDatum -> {
-                            System.out.println(metricDatum.getDimensions());
-                            return metricDatum.getDimensions()
-                                .contains(new Dimension().withName("Type").withValue(dimensionValue));
-                        })
+                        .filter(metricDatum -> metricDatum.getDimensions()
+                            .contains(new Dimension().withName("Type").withValue(dimensionValue)))
                         .findFirst();
 
         if (metricDatumOptional.isPresent()) {

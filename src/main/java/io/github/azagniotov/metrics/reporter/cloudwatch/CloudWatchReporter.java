@@ -242,7 +242,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                 stageMetricDatum(true, metricName, value, StandardUnit.None, percentile.getDesc(), metricData);
             }
 
-            stageHistorgramMtricStatisticSet(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, "snapshot-summary", metricData);
+            stageHistorgramMetricStatisticSet(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, "snapshot-summary", metricData);
         }
     }
 
@@ -291,12 +291,12 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
     }
 
-    private void stageHistorgramMtricStatisticSet(final boolean metricConfigured,
-                                                  final String metricName,
-                                                  final Snapshot snapshot,
-                                                  final StandardUnit standardUnit,
-                                                  final String dimensionValue,
-                                                  final List<MetricDatum> metricData) {
+    private void stageHistorgramMetricStatisticSet(final boolean metricConfigured,
+                                                   final String metricName,
+                                                   final Snapshot snapshot,
+                                                   final StandardUnit standardUnit,
+                                                   final String dimensionValue,
+                                                   final List<MetricDatum> metricData) {
         if (metricConfigured) {
             double scaledSum = LongStream.of(snapshot.getValues()).sum();
             final StatisticSet statisticSet = new StatisticSet()
