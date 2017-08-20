@@ -137,15 +137,15 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 ### Changelog
 
 ##### 1.0.4
-* Issue https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/issues/4 : Not reporting zero values. 
-* PR https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/6 : Reporting Histogram snapshot values as `StatisticSet` raw, without converting by duration factor (https://github.com/williedoran)
+* Issue [#4](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/issues/4): Not reporting zero values. 
+* PR [#6](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/6): Reporting Histogram snapshot values as `StatisticSet` raw, without converting by duration factor (https://github.com/williedoran)
 * Checking `isDebugEnabled` when logging debug information
 
 ##### 1.0.3
-* PR https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/3: Updated dependencies to latest versions (https://github.com/efenderbosch)
+* PR [#3](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/3): Updated dependencies to latest versions (https://github.com/efenderbosch)
 
 ##### 1.0.2
-* PR https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/2: Updated AWS SDK to `com.amazonaws:aws-java-sdk-cloudwatch:1.11.86` (https://github.com/MeiSign)
+* PR [#2](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/2): Updated AWS SDK to `com.amazonaws:aws-java-sdk-cloudwatch:1.11.86` (https://github.com/MeiSign)
 * Reporting Histogram snapshot `Arithemtic Mean` & `StdDev` raw, without converting by duration factor
 
 ### License
