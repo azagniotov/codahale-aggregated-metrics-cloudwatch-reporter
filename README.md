@@ -98,26 +98,29 @@ The reporter provides a fine-grained configuration options through its builder t
 
 
 ```
-    final AmazonCloudWatchAsync amazonCloudWatchAsync = new AmazonCloudWatchAsyncClient();
-    amazonCloudWatchAsync.setRegion(Region.getRegion(Regions.US_WEST_2));
-
+    final AmazonCloudWatchAsync amazonCloudWatchAsync =
+            AmazonCloudWatchAsyncClientBuilder
+                    .standard()
+                    .withRegion(Regions.US_WEST_2)
+                    .build();
+    
     final CloudWatchReporter cloudWatchReporter =
-        CloudWatchReporter.forRegistry(metricRegistry, amazonCloudWatchAsync, Main.class.getName())
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .filter(MetricFilter.ALL)
-                .withPercentiles(Percentile.P75, Percentile.P99)
-                .withOneMinuteMeanRate()
-                .withFiveMinuteMeanRate()
-                .withFifteenMinuteMeanRate()
-                .withMeanRate()
-                .withArithmeticMean()
-                .withStdDev()
-                .withStatisticSet()
-                .withJvmMetrics()
-                .withGlobalDimensions("Region=us-west-2", "Instance=stage")
-                .withDryRun()
-                .build();
+            CloudWatchReporter.forRegistry(metricRegistry, amazonCloudWatchAsync, Main.class.getName())
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .filter(MetricFilter.ALL)
+                    .withPercentiles(Percentile.P75, Percentile.P99)
+                    .withOneMinuteMeanRate()
+                    .withFiveMinuteMeanRate()
+                    .withFifteenMinuteMeanRate()
+                    .withMeanRate()
+                    .withArithmeticMean()
+                    .withStdDev()
+                    .withStatisticSet()
+                    .withJvmMetrics()
+                    .withGlobalDimensions("Region=us-west-2", "Instance=stage")
+                    .withDryRun()
+                    .build();
 
     cloudWatchReporter.start(10, TimeUnit.SECONDS);
 ```
