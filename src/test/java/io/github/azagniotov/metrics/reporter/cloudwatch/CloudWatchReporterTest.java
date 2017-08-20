@@ -33,7 +33,12 @@ import static com.amazonaws.services.cloudwatch.model.StandardUnit.Microseconds;
 import static com.amazonaws.services.cloudwatch.model.StandardUnit.Milliseconds;
 import static com.amazonaws.services.cloudwatch.model.StandardUnit.None;
 import static com.google.common.truth.Truth.assertThat;
+import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_COUNT;
+import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_GAUGE;
 import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_NAME_TYPE;
+import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_SNAPSHOT_MEAN;
+import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_SNAPSHOT_STD_DEV;
+import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_SNAPSHOT_SUMMARY;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -75,7 +80,7 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldNotInvokeCloudWatchClientInDryMode() throws Exception {
+    public void shouldNotInvokeCloudWatchClientInDryRunMode() throws Exception {
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
         reporterBuilder.withDryRun().build().report();
 
@@ -83,38 +88,46 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportWithoutGlobalDimensions() throws Exception {
+    public void shouldReportWithoutGlobalDimensionsWhenGlobalDimensionsNotConfigured() throws Exception {
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
-        reporterBuilder.build().report(); // When no 'withGlobalDimensions' was invoked
+        reporterBuilder.build().report(); // When 'withGlobalDimensions' was not called
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
         assertThat(dimensions).hasSize(1);
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("count"));
+        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_COUNT));
     }
 
     @Test
-    public void shouldReportExpectedCounterDimension() throws Exception {
+    public void reportedCounterShouldContainExpectedDimension() throws Exception {
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
         reporterBuilder.build().report();
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("count"));
+        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_COUNT));
     }
 
     @Test
-    public void shouldReportExpectedGaugeDimension() throws Exception {
+    public void reportedGaugeShouldContainExpectedDimension() throws Exception {
         metricRegistry.register(ARBITRARY_GAUGE_NAME, (Gauge<Long>) () -> 1L);
         reporterBuilder.build().report();
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("gauge"));
+        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_GAUGE));
     }
 
     @Test
-    public void shouldNeverReportMetersCountersGaugesWithZeroValues() throws Exception {
+    public void shouldNotReportGaugeWhenMetricValueNotOfTypeNumber() throws Exception {
+        metricRegistry.register(ARBITRARY_GAUGE_NAME, (Gauge<String>) () -> "bad value type");
+        reporterBuilder.build().report();
+
+        verify(mockAmazonCloudWatchAsyncClient, never()).putMetricDataAsync(any(PutMetricDataRequest.class));
+    }
+
+    @Test
+    public void neverReportMetersCountersGaugesWithZeroValues() throws Exception {
         metricRegistry.register(ARBITRARY_GAUGE_NAME, (Gauge<Long>) () -> 0L);
         metricRegistry.meter(ARBITRARY_METER_NAME).mark(0);
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc(0);
@@ -130,7 +143,7 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedOneMinuteMeanRateDimension() throws Exception {
+    public void reportedMeterShouldContainExpectedOneMinuteMeanRateDimension() throws Exception {
         metricRegistry.meter(ARBITRARY_METER_NAME).mark(1);
         buildReportWithSleep(reporterBuilder.withOneMinuteMeanRate());
 
@@ -140,7 +153,7 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedFiveMinuteMeanRateDimension() throws Exception {
+    public void reportedMeterShouldContainExpectedFiveMinuteMeanRateDimension() throws Exception {
         metricRegistry.meter(ARBITRARY_METER_NAME).mark(1);
         buildReportWithSleep(reporterBuilder.withFiveMinuteMeanRate());
 
@@ -150,7 +163,7 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedFifteenMinuteMeanRateDimension() throws Exception {
+    public void reportedMeterShouldContainExpectedFifteenMinuteMeanRateDimension() throws Exception {
         metricRegistry.meter(ARBITRARY_METER_NAME).mark(1);
         buildReportWithSleep(reporterBuilder.withFifteenMinuteMeanRate());
 
@@ -160,7 +173,7 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedMeanRateDimension() throws Exception {
+    public void reportedMeterShouldContainExpectedMeanRateDimension() throws Exception {
         metricRegistry.meter(ARBITRARY_METER_NAME).mark(1);
         reporterBuilder.withMeanRate().build().report();
 
@@ -170,28 +183,28 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedHistogramArithmeticMeanDimension() throws Exception {
+    public void reportedHistogramShouldContainExpectedArithmeticMeanDimension() throws Exception {
         metricRegistry.histogram(ARBITRARY_HISTOGRAM_NAME).update(1);
         reporterBuilder.withArithmeticMean().build().report();
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("snapshot-mean"));
+        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_SNAPSHOT_MEAN));
     }
 
     @Test
-    public void shouldReportExpectedHistogramStdDevDimension() throws Exception {
+    public void reportedHistogramShouldContainExpectedStdDevDimension() throws Exception {
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(1);
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(2);
         reporterBuilder.withStdDev().build().report();
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("snapshot-std-dev"));
+        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_SNAPSHOT_STD_DEV));
     }
 
     @Test
-    public void shouldReportExpectedTimeArithmeticMeanDimension() throws Exception {
+    public void reportedTimerShouldContainExpectedArithmeticMeanDimension() throws Exception {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3, TimeUnit.MILLISECONDS);
         reporterBuilder.withArithmeticMean().build().report();
 
@@ -201,7 +214,7 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedTimerStdDevDimension() throws Exception {
+    public void reportedTimerShouldContainExpectedStdDevDimension() throws Exception {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(1, TimeUnit.MILLISECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3, TimeUnit.MILLISECONDS);
         reporterBuilder.withStdDev().build().report();
@@ -294,19 +307,8 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedHistogramArithmeticMeanAsIs() throws Exception {
-        metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(1);
-        reporterBuilder.withArithmeticMean().build().report();
-
-        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-mean");
-
-        assertThat(metricData.getValue().intValue()).isEqualTo(1);
-        assertThat(metricData.getUnit()).isEqualTo(None.toString());
-    }
-
-    @Test
-    public void shouldReportExpectedTimerArithmeticMeanAsConvertedByDefaultDurationUnit() throws Exception {
-        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(1000000, TimeUnit.NANOSECONDS);
+    public void shouldReportArithmeticMeanAfterConversionByDefaultDurationWhenReportingTimer() throws Exception {
+        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(1_000_000, TimeUnit.NANOSECONDS);
         reporterBuilder.withArithmeticMean().build().report();
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-mean [in-milliseconds]");
@@ -316,14 +318,28 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportTimerExpectedSnapshotValuesAsConvertedByDurationFactor() throws Exception {
+    public void shouldReportStdDevAfterConversionByDefaultDurationWhenReportingTimer() throws Exception {
+        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(1_000_000, TimeUnit.NANOSECONDS);
+        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(2_000_000, TimeUnit.NANOSECONDS);
+        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3_000_000, TimeUnit.NANOSECONDS);
+        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(30_000_000, TimeUnit.NANOSECONDS);
+        reporterBuilder.withStdDev().build().report();
+
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-std-dev [in-milliseconds]");
+
+        assertThat(metricData.getValue().intValue()).isEqualTo(12);
+        assertThat(metricData.getUnit()).isEqualTo(Milliseconds.toString());
+    }
+
+    @Test
+    public void shouldReportSnapshotValuesAfterConversionByCustomDurationWhenReportingTimer() throws Exception {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(1, TimeUnit.SECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(2, TimeUnit.SECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3, TimeUnit.SECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(30, TimeUnit.SECONDS);
         reporterBuilder.withStatisticSet().convertDurationsTo(TimeUnit.MICROSECONDS).build().report();
 
-        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
         assertThat(metricData.getStatisticValues().getSum().intValue()).isEqualTo(36_000_000);
         assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30_000_000);
@@ -333,28 +349,39 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedHistogramStdDevAsIs() throws Exception {
+    public void shouldReportArithmeticMeanWithoutConversionWhenReportingHistogram() throws Exception {
+        metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(1);
+        reporterBuilder.withArithmeticMean().build().report();
+
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_MEAN);
+
+        assertThat(metricData.getValue().intValue()).isEqualTo(1);
+        assertThat(metricData.getUnit()).isEqualTo(None.toString());
+    }
+
+    @Test
+    public void shouldReportStdDevWithoutConversionWhenReportingHistogram() throws Exception {
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(1);
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(2);
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(3);
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(30);
         reporterBuilder.withStdDev().build().report();
 
-        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-std-dev");
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_STD_DEV);
 
         assertThat(metricData.getValue().intValue()).isEqualTo(12);
         assertThat(metricData.getUnit()).isEqualTo(None.toString());
     }
 
     @Test
-    public void shouldReportHistogramExpectedSnapshotValuesAsRaw() throws Exception {
+    public void shouldReportSnapshotValuesWithoutConversionWhenReportingHistogram() throws Exception {
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(1);
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(2);
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(3);
         metricRegistry.histogram(CloudWatchReporterTest.ARBITRARY_HISTOGRAM_NAME).update(30);
         reporterBuilder.withStatisticSet().build().report();
 
-        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
         assertThat(metricData.getStatisticValues().getSum().intValue()).isEqualTo(36);
         assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30);
@@ -375,7 +402,7 @@ public class CloudWatchReporterTest {
         slidingWindowHistogram.update(30);
         reporter.report();
 
-        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
         assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30);
         assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1);
@@ -389,7 +416,7 @@ public class CloudWatchReporterTest {
         slidingWindowHistogram.update(6);
         reporter.report();
 
-        final MetricDatum secondMetricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
+        final MetricDatum secondMetricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
         assertThat(secondMetricData.getStatisticValues().getMaximum().intValue()).isEqualTo(100);
         assertThat(secondMetricData.getStatisticValues().getMinimum().intValue()).isEqualTo(4);
@@ -397,20 +424,6 @@ public class CloudWatchReporterTest {
         assertThat(secondMetricData.getStatisticValues().getSum().intValue()).isEqualTo(115);
         assertThat(secondMetricData.getUnit()).isEqualTo(None.toString());
 
-    }
-
-    @Test
-    public void shouldReportExpectedTimerStdDevAsConvertedByDefaultDurationUnit() throws Exception {
-        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(1000000, TimeUnit.NANOSECONDS);
-        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(2000000, TimeUnit.NANOSECONDS);
-        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3000000, TimeUnit.NANOSECONDS);
-        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(30000000, TimeUnit.NANOSECONDS);
-        reporterBuilder.withStdDev().build().report();
-
-        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-std-dev [in-milliseconds]");
-
-        assertThat(metricData.getValue().intValue()).isEqualTo(12);
-        assertThat(metricData.getUnit()).isEqualTo(Milliseconds.toString());
     }
 
     private MetricDatum metricDatumByDimensionFromCapturedRequest(final String dimensionValue) {

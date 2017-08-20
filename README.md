@@ -77,7 +77,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.4")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.5")
 }
 ```
 
@@ -136,7 +136,7 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 
 ### Changelog
 
-##### 1.0.5-SNAPSHOT
+##### 1.0.5
 * Upgraded Metrics to `v3.2.3` due to [#1115](https://github.com/dropwizard/metrics/pull/1115)
 * Upgraded AWS Java SDK to `v1.11.179`
 
