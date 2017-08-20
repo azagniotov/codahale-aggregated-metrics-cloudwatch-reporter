@@ -30,9 +30,9 @@ allprojects {
 }
 
 dependencies {
-    compile("io.dropwizard.metrics:metrics-core:3.2.2")
-    compile("io.dropwizard.metrics:metrics-jvm:3.2.2")
-    compile("com.amazonaws:aws-java-sdk-cloudwatch:1.11.114")
+    compile("io.dropwizard.metrics:metrics-core:3.2.3")
+    compile("io.dropwizard.metrics:metrics-jvm:3.2.3")
+    compile("com.amazonaws:aws-java-sdk-cloudwatch:1.11.179")
     compile("com.google.guava:guava:21.0")
 
     compile("ch.qos.logback:logback-classic:1.2.2")

@@ -25,6 +25,7 @@ import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -57,7 +58,8 @@ public class CloudWatchReporter extends ScheduledReporter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudWatchReporter.class);
 
-    private static final String DIMENSION_NAME_TYPE = "Type";
+    @VisibleForTesting
+    static final String DIMENSION_NAME_TYPE = "Type";
 
     /**
      * Amazon CloudWatch rejects values that are either too small or too large.
@@ -277,6 +279,9 @@ public class CloudWatchReporter extends ScheduledReporter {
                                   final StandardUnit standardUnit,
                                   final String dimensionValue,
                                   final List<MetricDatum> metricData) {
+        // Only submit metrics that show some data, so let's:
+        // - save some money
+        // - prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
         if (metricConfigured && metricValue > 0) {
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
@@ -323,9 +328,9 @@ public class CloudWatchReporter extends ScheduledReporter {
                                                  final String dimensionValue,
                                                  final List<MetricDatum> metricData) {
         if (metricConfigured) {
-            double scaledSum = LongStream.of(snapshot.getValues()).sum();
+            double total = LongStream.of(snapshot.getValues()).sum();
             final StatisticSet statisticSet = new StatisticSet()
-                    .withSum(scaledSum)
+                    .withSum(total)
                     .withSampleCount((double) snapshot.size())
                     .withMinimum((double) snapshot.getMin())
                     .withMaximum((double) snapshot.getMax());
