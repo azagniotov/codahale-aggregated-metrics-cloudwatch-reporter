@@ -143,7 +143,9 @@ public class CloudWatchReporter extends ScheduledReporter {
                         .withMetricData(partition);
 
                 if (builder.withDryRun) {
-                    LOGGER.debug("Dry run - constructed PutMetricDataRequest: {}", putMetricDataRequest);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Dry run - constructed PutMetricDataRequest: {}", putMetricDataRequest);
+                    }
                 } else {
                     cloudWatchFutures.add(cloudWatchAsyncClient.putMetricDataAsync(putMetricDataRequest));
                 }
@@ -158,7 +160,9 @@ public class CloudWatchReporter extends ScheduledReporter {
                 }
             }
 
-            LOGGER.debug("Sent {} metric data to CloudWatch. namespace: {}", metricData.size(), namespace);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Sent {} metric datums to CloudWatch. Namespace: {}, metric data {}", metricData.size(), namespace, metricData);
+            }
 
         } catch (final RuntimeException e) {
             LOGGER.error("Error marshalling CloudWatch metrics.", e);
@@ -176,7 +180,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                 try {
                     cloudWatchAsyncClient.shutdown();
                 } catch (final Exception e) {
-                    LOGGER.debug("Error shutting down AmazonCloudWatchAsync", cloudWatchAsyncClient, e);
+                    LOGGER.error("Error shutting down AmazonCloudWatchAsync", cloudWatchAsyncClient, e);
                 }
             }
         }
@@ -200,11 +204,17 @@ public class CloudWatchReporter extends ScheduledReporter {
 
         // Only submit metrics that have changed - let's save some money!
         final long delta = currentCount - lastCount;
-        if (delta != 0L) {
-            stageMetricDatum(true, metricName, delta, StandardUnit.Count, "count", metricData);
-        }
+        stageMetricDatum(true, metricName, delta, StandardUnit.Count, "count", metricData);
     }
 
+    /**
+     * The rates of {@link Metered} are reported after being converted using
+     * the rate unit set and the rate factor.
+     *
+     * @see Timer#getSnapshot
+     * @see #getRateUnit
+     * @see #convertRate(double)
+     */
     private void processMeter(final String metricName, final Metered meter, final List<MetricDatum> metricData) {
         final String dimensionValue = String.format("-rate [per-%s]", getRateUnit());
         stageMetricDatum(builder.withOneMinuteMeanRate, metricName, convertRate(meter.getOneMinuteRate()), rateUnit, "1-min-mean" + dimensionValue, metricData);
@@ -213,8 +223,17 @@ public class CloudWatchReporter extends ScheduledReporter {
         stageMetricDatum(builder.withMeanRate, metricName, convertRate(meter.getMeanRate()), rateUnit, "mean" + dimensionValue, metricData);
     }
 
+    /**
+     * The {@link Snapshot} values of {@link Timer} are reported as {@link StatisticSet} after conversion. The
+     * conversion is done using the duration unit set and the duration factor.
+     *
+     * @see Timer#getSnapshot
+     * @see #getDurationUnit
+     * @see #convertDuration(double)
+     */
     private void processTimer(final String metricName, final Timer timer, final List<MetricDatum> metricData) {
         final Snapshot snapshot = timer.getSnapshot();
+
         // Only submit metrics that show some data - let's save some money!
         if (snapshot.size() > 0) {
             final String dimensionValue = String.format(" [in-%s]", getDurationUnit());
@@ -226,10 +245,16 @@ public class CloudWatchReporter extends ScheduledReporter {
                 stageMetricDatum(true, metricName, convertedDuration, durationUnit, percentile.getDesc(), metricData);
             }
 
-            stageMetricDatum(builder.withStatisticSet, metricName, snapshot, durationUnit, "snapshot-summary", metricData);
+            stageMetricDatumWithConvertedSnapshot(builder.withStatisticSet, metricName, snapshot, durationUnit, "snapshot-summary", metricData);
         }
     }
 
+    /**
+     * The {@link Snapshot} values of {@link Histogram} are reported as {@link StatisticSet} raw. In other words, the
+     * conversion using the duration unit set and the duration factor does NOT apply.
+     *
+     * @see Histogram#getSnapshot
+     */
     private void processHistogram(final String metricName, final Histogram histogram, final List<MetricDatum> metricData) {
         final Snapshot snapshot = histogram.getSnapshot();
         // Only submit metrics that show some data - let's save some money!
@@ -242,7 +267,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                 stageMetricDatum(true, metricName, value, StandardUnit.None, percentile.getDesc(), metricData);
             }
 
-            stageHistorgramMetricStatisticSet(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, "snapshot-summary", metricData);
+            stageMetricDatumWithRawSnapshot(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, "snapshot-summary", metricData);
         }
     }
 
@@ -252,7 +277,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                                   final StandardUnit standardUnit,
                                   final String dimensionValue,
                                   final List<MetricDatum> metricData) {
-        if (metricConfigured) {
+        if (metricConfigured && metricValue > 0) {
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
 
@@ -265,12 +290,12 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
     }
 
-    private void stageMetricDatum(final boolean metricConfigured,
-                                  final String metricName,
-                                  final Snapshot snapshot,
-                                  final StandardUnit standardUnit,
-                                  final String dimensionValue,
-                                  final List<MetricDatum> metricData) {
+    private void stageMetricDatumWithConvertedSnapshot(final boolean metricConfigured,
+                                                       final String metricName,
+                                                       final Snapshot snapshot,
+                                                       final StandardUnit standardUnit,
+                                                       final String dimensionValue,
+                                                       final List<MetricDatum> metricData) {
         if (metricConfigured) {
             double scaledSum = convertDuration(LongStream.of(snapshot.getValues()).sum());
             final StatisticSet statisticSet = new StatisticSet()
@@ -291,12 +316,12 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
     }
 
-    private void stageHistorgramMetricStatisticSet(final boolean metricConfigured,
-                                                   final String metricName,
-                                                   final Snapshot snapshot,
-                                                   final StandardUnit standardUnit,
-                                                   final String dimensionValue,
-                                                   final List<MetricDatum> metricData) {
+    private void stageMetricDatumWithRawSnapshot(final boolean metricConfigured,
+                                                 final String metricName,
+                                                 final Snapshot snapshot,
+                                                 final StandardUnit standardUnit,
+                                                 final String dimensionValue,
+                                                 final List<MetricDatum> metricData) {
         if (metricConfigured) {
             double scaledSum = LongStream.of(snapshot.getValues()).sum();
             final StatisticSet statisticSet = new StatisticSet()
@@ -316,6 +341,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                     .withUnit(standardUnit));
         }
     }
+
     private double cleanMetricValue(final double metricValue) {
         double absoluteValue = Math.abs(metricValue);
         if (absoluteValue < SMALLEST_SENDABLE_VALUE) {

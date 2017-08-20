@@ -12,6 +12,7 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
   - [Usage](#usage)
     - [Dry run](#dry-run)
   - [Credits](#credits)
+  - [Changelog](#changelog)
   - [License](#license)
 
 ### Prerequisites
@@ -76,7 +77,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.3")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.4")
 }
 ```
 
@@ -133,6 +134,19 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/basis-technology-corp/metrics-cloudwatch-reporter
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
+### Changelog
+
+##### 1.0.4
+* Issue https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/issues/4 : Not reporting zero values. 
+* PR https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/6 : Reporting Histogram snapshot values as `StatisticSet` raw, without converting by duration factor (https://github.com/williedoran)
+* Checking `isDebugEnabled` when logging debug information
+
+##### 1.0.3
+* PR https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/3: Updated dependencies to latest versions (https://github.com/efenderbosch)
+
+##### 1.0.2
+* PR https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/2: Updated AWS SDK to `com.amazonaws:aws-java-sdk-cloudwatch:1.11.86` (https://github.com/MeiSign)
+* Reporting Histogram snapshot `Arithemtic Mean` & `StdDev` raw, without converting by duration factor
 
 ### License
 MIT

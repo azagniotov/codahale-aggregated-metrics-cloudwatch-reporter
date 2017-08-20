@@ -5,11 +5,14 @@ import com.amazonaws.services.cloudwatch.model.Dimension;
 import com.amazonaws.services.cloudwatch.model.MetricDatum;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataResult;
+import com.codahale.metrics.EWMA;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SlidingWindowReservoir;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -17,6 +20,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +51,11 @@ public class CloudWatchReporterTest {
 
     private MetricRegistry metricRegistry;
     private CloudWatchReporter.Builder reporterBuilder;
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        reduceMeterDefaultTickInterval();
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -85,7 +95,7 @@ public class CloudWatchReporterTest {
 
     @Test
     public void shouldReportExpectedGaugeDimension() throws Exception {
-        metricRegistry.register("blah", (Gauge<Long>) () -> 1L);
+        metricRegistry.register("TheGauge", (Gauge<Long>) () -> 1L);
         reporterBuilder.build().report();
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
@@ -96,7 +106,7 @@ public class CloudWatchReporterTest {
     @Test
     public void shouldReportExpectedOneMinuteMeanRateDimension() throws Exception {
         metricRegistry.meter("TheMeter").mark(1);
-        reporterBuilder.withOneMinuteMeanRate().build().report();
+        buildReportWithSleep(reporterBuilder.withOneMinuteMeanRate());
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
@@ -106,7 +116,7 @@ public class CloudWatchReporterTest {
     @Test
     public void shouldReportExpectedFiveMinuteMeanRateDimension() throws Exception {
         metricRegistry.meter("TheMeter").mark(1);
-        reporterBuilder.withFiveMinuteMeanRate().build().report();
+        buildReportWithSleep(reporterBuilder.withFiveMinuteMeanRate());
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
@@ -116,7 +126,7 @@ public class CloudWatchReporterTest {
     @Test
     public void shouldReportExpectedFifteenMinuteMeanRateDimension() throws Exception {
         metricRegistry.meter("TheMeter").mark(1);
-        reporterBuilder.withFifteenMinuteMeanRate().build().report();
+        buildReportWithSleep(reporterBuilder.withFifteenMinuteMeanRate());
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
@@ -146,6 +156,7 @@ public class CloudWatchReporterTest {
     @Test
     public void shouldReportExpectedHistogramStdDevDimension() throws Exception {
         metricRegistry.histogram("TheHistogram").update(1);
+        metricRegistry.histogram("TheHistogram").update(2);
         reporterBuilder.withStdDev().build().report();
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
@@ -165,6 +176,7 @@ public class CloudWatchReporterTest {
 
     @Test
     public void shouldReportExpectedTimerStdDevDimension() throws Exception {
+        metricRegistry.timer("TheTimer").update(1, TimeUnit.MILLISECONDS);
         metricRegistry.timer("TheTimer").update(3, TimeUnit.MILLISECONDS);
         reporterBuilder.withStdDev().build().report();
 
@@ -277,6 +289,23 @@ public class CloudWatchReporterTest {
     }
 
     @Test
+    public void shouldReportTimerExpectedSnapshotValuesAsConvertedByDurationFactor() throws Exception {
+        metricRegistry.timer("TheTimer").update(1, TimeUnit.SECONDS);
+        metricRegistry.timer("TheTimer").update(2, TimeUnit.SECONDS);
+        metricRegistry.timer("TheTimer").update(3, TimeUnit.SECONDS);
+        metricRegistry.timer("TheTimer").update(30, TimeUnit.SECONDS);
+        reporterBuilder.withStatisticSet().convertDurationsTo(TimeUnit.MICROSECONDS).build().report();
+
+        final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
+
+        assertThat(metricData.getStatisticValues().getSum().intValue()).isEqualTo(36_000_000);
+        assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30_000_000);
+        assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1_000_000);
+        assertThat(metricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(4);
+        assertThat(metricData.getUnit()).isEqualTo("Microseconds");
+    }
+
+    @Test
     public void shouldReportExpectedHistogramStdDevAsIs() throws Exception {
         metricRegistry.histogram("TheHistogram").update(1);
         metricRegistry.histogram("TheHistogram").update(2);
@@ -291,7 +320,7 @@ public class CloudWatchReporterTest {
     }
 
     @Test
-    public void shouldReportExpectedHistogramMaxMinAsIs() throws Exception {
+    public void shouldReportHistogramExpectedSnapshotValuesAsRaw() throws Exception {
         metricRegistry.histogram("TheHistogram").update(1);
         metricRegistry.histogram("TheHistogram").update(2);
         metricRegistry.histogram("TheHistogram").update(3);
@@ -300,13 +329,15 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-summary");
 
+        assertThat(metricData.getStatisticValues().getSum().intValue()).isEqualTo(36);
         assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30);
         assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1);
+        assertThat(metricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(4);
         assertThat(metricData.getUnit()).isEqualTo("None");
     }
 
     @Test
-    public void shouldReportSubsequentMaxMinValues() throws Exception {
+    public void shouldReportHistogramSubsequentSnapshotValues_SumMaxMinValues() throws Exception {
         Histogram slidingWindowHistogram = new Histogram(new SlidingWindowReservoir(4));
         metricRegistry.register("SlidingWindowHistogram", slidingWindowHistogram);
 
@@ -362,7 +393,7 @@ public class CloudWatchReporterTest {
                 metricData
                         .stream()
                         .filter(metricDatum -> metricDatum.getDimensions()
-                            .contains(new Dimension().withName("Type").withValue(dimensionValue)))
+                                .contains(new Dimension().withName("Type").withValue(dimensionValue)))
                         .findFirst();
 
         if (metricDatumOptional.isPresent()) {
@@ -391,5 +422,35 @@ public class CloudWatchReporterTest {
             all.addAll(metricDatum.getDimensions());
         }
         return all;
+    }
+
+    private void buildReportWithSleep(final CloudWatchReporter.Builder cloudWatchReporterBuilder) throws InterruptedException {
+        final CloudWatchReporter cloudWatchReporter = cloudWatchReporterBuilder.build();
+        Thread.sleep(10);
+        cloudWatchReporter.report();
+    }
+
+    /**
+     * This is a very ugly way to fool the {@link EWMA} by reducing the default tick interval
+     * in {@link Meter} from {@code 5} seconds to {@code 1} millisecond in order to ensure that
+     * exponentially-weighted moving average rates are populated. This helps to verify that all
+     * the expected {@link Dimension}s are present in {@link MetricDatum}.
+     *
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     * @see Meter#tickIfNecessary()
+     * @see MetricDatum#getDimensions()
+     */
+    private static void reduceMeterDefaultTickInterval() throws NoSuchFieldException, IllegalAccessException {
+        setFinalStaticField(Meter.class, "TICK_INTERVAL", TimeUnit.MILLISECONDS.toNanos(1));
+    }
+
+    private static void setFinalStaticField(final Class clazz, final String fieldName, long value) throws NoSuchFieldException, IllegalAccessException {
+        final Field field = clazz.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        final Field modifiers = field.getClass().getDeclaredField("modifiers");
+        modifiers.setAccessible(true);
+        modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+        field.set(null, value);
     }
 }
