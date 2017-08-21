@@ -6,7 +6,7 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 
   - [Prerequisites](#prerequisites)
   - [Summary](#summary)
-  - [Reportables](#reportables)
+  - [Reportable Metrics](#reportable-metrics)
   - [Defaults](#defaults)
   - [Dependencies](#dependencies)
   - [Usage](#usage)
@@ -27,7 +27,7 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 - If configured, each [Snapshot](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Snapshot.html) translated into [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html) in the most direct way possible.
 - If configured, JVM statistic is reported
 
-### Reportables
+### Reportable Metrics
 
 Currently the only metric values that are reportable through configuration are:
 
@@ -37,6 +37,12 @@ Currently the only metric values that are reportable through configuration are:
 - Arithmetic mean & standard deviation of [Snapshot](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Snapshot.html) values in [Histogram](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Timer.html)
 - Mean rates from [Meter](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Meter.html) and [Timer](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Timer.html)
 - Summaries of [Snapshot](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Snapshot.html) values in [Histogram](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Timer.html) as [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html)
+
+__Please note__:
+
+- [Histogram](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Histogram.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Snapshot.html)) are reported __raw__.
+- [Timer](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Timer.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Snapshot.html)) are reported after conversion by a duration factor was applied. The duration factor is calculated by converting `1` unit of `duration unit` type to `nanoseconds` (see [ScheduledReporter](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/ScheduledReporter.html))
+- [Meter](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/Meter.html) values (the `1min rate`, `5min rate`, `15min rate` & `mean rate`) are reported after conversion by a rate factor was applied. The rate factor is calculated by converting `1` unit of `rate unit` type to `seconds` (see [ScheduledReporter](http://metrics.dropwizard.io/3.2.3/apidocs/com/codahale/metrics/ScheduledReporter.html))
 
 ### Defaults
 
