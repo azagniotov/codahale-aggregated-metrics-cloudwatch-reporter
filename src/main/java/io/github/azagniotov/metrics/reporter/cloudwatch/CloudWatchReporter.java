@@ -2,6 +2,7 @@ package io.github.azagniotov.metrics.reporter.cloudwatch;
 
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
 import com.amazonaws.services.cloudwatch.model.Dimension;
+import com.amazonaws.services.cloudwatch.model.InvalidParameterValueException;
 import com.amazonaws.services.cloudwatch.model.MetricDatum;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataResult;
@@ -243,6 +244,13 @@ public class CloudWatchReporter extends ScheduledReporter {
     /**
      * The {@link Snapshot} values of {@link Timer} are reported as {@link StatisticSet} after conversion. The
      * conversion is done using the duration factor, which is deduced from the set duration unit.
+     * <p>
+     * The reported values submitted only if they show some data in order to:
+     * <p>
+     * 1. save some money
+     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
+     * <p>
+     * If {@link Builder#withZeroValuesSubmission()} is {@code true}, then all values will be submitted
      *
      * @see Timer#getSnapshot
      * @see #getDurationUnit
@@ -252,7 +260,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         final Snapshot snapshot = timer.getSnapshot();
 
         // Only submit metrics that show some data - let's save some money!
-        if (snapshot.size() > 0) {
+        if (builder.withZeroValuesSubmission || snapshot.size() > 0) {
             final String formattedDuration = String.format(" [in-%s]", getDurationUnit());
             stageMetricDatum(builder.withArithmeticMean, metricName, convertDuration(snapshot.getMean()), durationUnit, DIMENSION_SNAPSHOT_MEAN + formattedDuration, metricData);
             stageMetricDatum(builder.withStdDev, metricName, convertDuration(snapshot.getStdDev()), durationUnit, DIMENSION_SNAPSHOT_STD_DEV + formattedDuration, metricData);
@@ -269,13 +277,20 @@ public class CloudWatchReporter extends ScheduledReporter {
     /**
      * The {@link Snapshot} values of {@link Histogram} are reported as {@link StatisticSet} raw. In other words, the
      * conversion using the duration factor does NOT apply.
+     * <p>
+     * The reported values submitted only if they show some data in order to:
+     * <p>
+     * 1. save some money
+     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
+     * <p>
+     * If {@link Builder#withZeroValuesSubmission()} is {@code true}, then all values will be submitted
      *
      * @see Histogram#getSnapshot
      */
     private void processHistogram(final String metricName, final Histogram histogram, final List<MetricDatum> metricData) {
         final Snapshot snapshot = histogram.getSnapshot();
         // Only submit metrics that show some data - let's save some money!
-        if (snapshot.size() > 0) {
+        if (builder.withZeroValuesSubmission || snapshot.size() > 0) {
             stageMetricDatum(builder.withArithmeticMean, metricName, snapshot.getMean(), StandardUnit.None, DIMENSION_SNAPSHOT_MEAN, metricData);
             stageMetricDatum(builder.withStdDev, metricName, snapshot.getStdDev(), StandardUnit.None, DIMENSION_SNAPSHOT_STD_DEV, metricData);
 
@@ -288,6 +303,21 @@ public class CloudWatchReporter extends ScheduledReporter {
         }
     }
 
+    /**
+     * Submits metrics that show some data in order to:
+     * <p>
+     * 1. save some money
+     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
+     * <p>
+     * If {@link Builder#withZeroValuesSubmission()} is {@code true}, then all values will be submitted
+     *
+     * @param metricConfigured
+     * @param metricName
+     * @param metricValue
+     * @param standardUnit
+     * @param dimensionValue
+     * @param metricData
+     */
     private void stageMetricDatum(final boolean metricConfigured,
                                   final String metricName,
                                   final double metricValue,
@@ -297,7 +327,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         // Only submit metrics that show some data, so let's:
         // - save some money
         // - prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
-        if (metricConfigured && metricValue > 0) {
+        if (metricConfigured && (builder.withZeroValuesSubmission || metricValue > 0)) {
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
 
@@ -434,6 +464,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         private boolean withArithmeticMean;
         private boolean withStdDev;
         private boolean withDryRun;
+        private boolean withZeroValuesSubmission;
         private boolean withStatisticSet;
         private boolean withJvmMetrics;
         private MetricFilter metricFilter;
@@ -623,6 +654,21 @@ public class CloudWatchReporter extends ScheduledReporter {
          */
         public Builder withDryRun() {
             withDryRun = true;
+            return this;
+        }
+
+        /**
+         * POSTs to CloudWatch all values. Otherwise, the reporter does not POST values which are zero in order to save
+         * costs. Also, some users have been experiencing {@link InvalidParameterValueException} when submitting zero
+         * values. Please refer to:
+         * https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/issues/4
+         * <p>
+         * {@code false} by default.
+         *
+         * @return {@code this}
+         */
+        public Builder withZeroValuesSubmission() {
+            withZeroValuesSubmission = true;
             return this;
         }
 

@@ -125,6 +125,7 @@ The reporter provides a fine-grained configuration options through its builder t
                     .withStatisticSet()
                     .withJvmMetrics()
                     .withGlobalDimensions("Region=us-west-2", "Instance=stage")
+                    .withZeroValuesSubmission()
                     .withDryRun()
                     .build();
 

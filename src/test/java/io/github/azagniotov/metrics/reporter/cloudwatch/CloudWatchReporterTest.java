@@ -143,6 +143,30 @@ public class CloudWatchReporterTest {
     }
 
     @Test
+    public void reportMetersCountersGaugesWithZeroValuesOnlyWhenConfigured() throws Exception {
+        metricRegistry.register(ARBITRARY_GAUGE_NAME, (Gauge<Long>) () -> 0L);
+        metricRegistry.meter(ARBITRARY_METER_NAME).mark(0);
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc(0);
+        metricRegistry.timer(ARBITRARY_TIMER_NAME).update(-1L, TimeUnit.NANOSECONDS);
+
+        buildReportWithSleep(reporterBuilder
+                .withArithmeticMean()
+                .withOneMinuteMeanRate()
+                .withFiveMinuteMeanRate()
+                .withFifteenMinuteMeanRate()
+                .withZeroValuesSubmission()
+                .withMeanRate());
+
+        verify(mockAmazonCloudWatchAsyncClient, times(1)).putMetricDataAsync(metricDataRequestCaptor.capture());
+
+        final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
+        final List<MetricDatum> metricData = putMetricDataRequest.getMetricData();
+        for (final MetricDatum metricDatum : metricData) {
+            assertThat(metricDatum.getValue()).isEqualTo(0.0);
+        }
+    }
+
+    @Test
     public void reportedMeterShouldContainExpectedOneMinuteMeanRateDimension() throws Exception {
         metricRegistry.meter(ARBITRARY_METER_NAME).mark(1);
         buildReportWithSleep(reporterBuilder.withOneMinuteMeanRate());
@@ -447,11 +471,6 @@ public class CloudWatchReporterTest {
     private MetricDatum firstMetricDatumFromCapturedRequest() {
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
         return putMetricDataRequest.getMetricData().get(0);
-    }
-
-    private List<MetricDatum> allMetricDataFromCapturedRequest() {
-        final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
-        return putMetricDataRequest.getMetricData();
     }
 
     private List<Dimension> firstMetricDatumDimensionsFromCapturedRequest() {
