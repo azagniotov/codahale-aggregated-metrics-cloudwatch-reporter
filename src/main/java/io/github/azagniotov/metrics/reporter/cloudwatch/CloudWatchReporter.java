@@ -259,17 +259,18 @@ public class CloudWatchReporter extends ScheduledReporter {
     private void processTimer(final String metricName, final Timer timer, final List<MetricDatum> metricData) {
         final Snapshot snapshot = timer.getSnapshot();
 
-        // Only submit metrics that show some data - let's save some money!
         if (builder.withZeroValuesSubmission || snapshot.size() > 0) {
-            final String formattedDuration = String.format(" [in-%s]", getDurationUnit());
-            stageMetricDatum(builder.withArithmeticMean, metricName, convertDuration(snapshot.getMean()), durationUnit, DIMENSION_SNAPSHOT_MEAN + formattedDuration, metricData);
-            stageMetricDatum(builder.withStdDev, metricName, convertDuration(snapshot.getStdDev()), durationUnit, DIMENSION_SNAPSHOT_STD_DEV + formattedDuration, metricData);
-
             for (final Percentile percentile : builder.percentiles) {
                 final double convertedDuration = convertDuration(snapshot.getValue(percentile.getQuantile()));
                 stageMetricDatum(true, metricName, convertedDuration, durationUnit, percentile.getDesc(), metricData);
             }
+        }
 
+        // prevent empty snapshot to throw InvalidParameterValueException
+        if (snapshot.size() > 0) {
+            final String formattedDuration = String.format(" [in-%s]", getDurationUnit());
+            stageMetricDatum(builder.withArithmeticMean, metricName, convertDuration(snapshot.getMean()), durationUnit, DIMENSION_SNAPSHOT_MEAN + formattedDuration, metricData);
+            stageMetricDatum(builder.withStdDev, metricName, convertDuration(snapshot.getStdDev()), durationUnit, DIMENSION_SNAPSHOT_STD_DEV + formattedDuration, metricData);
             stageMetricDatumWithConvertedSnapshot(builder.withStatisticSet, metricName, snapshot, durationUnit, metricData);
         }
     }
@@ -289,16 +290,18 @@ public class CloudWatchReporter extends ScheduledReporter {
      */
     private void processHistogram(final String metricName, final Histogram histogram, final List<MetricDatum> metricData) {
         final Snapshot snapshot = histogram.getSnapshot();
-        // Only submit metrics that show some data - let's save some money!
-        if (builder.withZeroValuesSubmission || snapshot.size() > 0) {
-            stageMetricDatum(builder.withArithmeticMean, metricName, snapshot.getMean(), StandardUnit.None, DIMENSION_SNAPSHOT_MEAN, metricData);
-            stageMetricDatum(builder.withStdDev, metricName, snapshot.getStdDev(), StandardUnit.None, DIMENSION_SNAPSHOT_STD_DEV, metricData);
 
+        if (builder.withZeroValuesSubmission || snapshot.size() > 0) {
             for (final Percentile percentile : builder.percentiles) {
                 final double value = snapshot.getValue(percentile.getQuantile());
                 stageMetricDatum(true, metricName, value, StandardUnit.None, percentile.getDesc(), metricData);
             }
+        }
 
+        // prevent empty snapshot to throw InvalidParameterValueException
+        if (snapshot.size() > 0) {
+            stageMetricDatum(builder.withArithmeticMean, metricName, snapshot.getMean(), StandardUnit.None, DIMENSION_SNAPSHOT_MEAN, metricData);
+            stageMetricDatum(builder.withStdDev, metricName, snapshot.getStdDev(), StandardUnit.None, DIMENSION_SNAPSHOT_STD_DEV, metricData);
             stageMetricDatumWithRawSnapshot(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, metricData);
         }
     }
@@ -307,7 +310,6 @@ public class CloudWatchReporter extends ScheduledReporter {
      * Submits metrics that show some data in order to:
      * <p>
      * 1. save some money
-     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
      * <p>
      * If {@link Builder#withZeroValuesSubmission()} is {@code true}, then all values will be submitted
      *
@@ -326,7 +328,6 @@ public class CloudWatchReporter extends ScheduledReporter {
                                   final List<MetricDatum> metricData) {
         // Only submit metrics that show some data, so let's:
         // - save some money
-        // - prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
         if (metricConfigured && (builder.withZeroValuesSubmission || metricValue > 0)) {
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
