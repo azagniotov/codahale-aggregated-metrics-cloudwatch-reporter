@@ -245,10 +245,11 @@ public class CloudWatchReporter extends ScheduledReporter {
      * The {@link Snapshot} values of {@link Timer} are reported as {@link StatisticSet} after conversion. The
      * conversion is done using the duration factor, which is deduced from the set duration unit.
      * <p>
-     * The reported values submitted only if they show some data in order to:
+     * Please note, the reported values submitted only if they show some data (greater than zero) in order to:
      * <p>
      * 1. save some money
-     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
+     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException if empty {@link Snapshot}
+     * is submitted
      * <p>
      * If {@link Builder#withZeroValuesSubmission()} is {@code true}, then all values will be submitted
      *
@@ -266,7 +267,7 @@ public class CloudWatchReporter extends ScheduledReporter {
             }
         }
 
-        // prevent empty snapshot to throw InvalidParameterValueException
+        // prevent empty snapshot from causing InvalidParameterValueException
         if (snapshot.size() > 0) {
             final String formattedDuration = String.format(" [in-%s]", getDurationUnit());
             stageMetricDatum(builder.withArithmeticMean, metricName, convertDuration(snapshot.getMean()), durationUnit, DIMENSION_SNAPSHOT_MEAN + formattedDuration, metricData);
@@ -279,10 +280,11 @@ public class CloudWatchReporter extends ScheduledReporter {
      * The {@link Snapshot} values of {@link Histogram} are reported as {@link StatisticSet} raw. In other words, the
      * conversion using the duration factor does NOT apply.
      * <p>
-     * The reported values submitted only if they show some data in order to:
+     * Please note, the reported values submitted only if they show some data (greater than zero) in order to:
      * <p>
      * 1. save some money
-     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException
+     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException if empty {@link Snapshot}
+     * is submitted
      * <p>
      * If {@link Builder#withZeroValuesSubmission()} is {@code true}, then all values will be submitted
      *
@@ -298,7 +300,7 @@ public class CloudWatchReporter extends ScheduledReporter {
             }
         }
 
-        // prevent empty snapshot to throw InvalidParameterValueException
+        // prevent empty snapshot from causing InvalidParameterValueException
         if (snapshot.size() > 0) {
             stageMetricDatum(builder.withArithmeticMean, metricName, snapshot.getMean(), StandardUnit.None, DIMENSION_SNAPSHOT_MEAN, metricData);
             stageMetricDatum(builder.withStdDev, metricName, snapshot.getStdDev(), StandardUnit.None, DIMENSION_SNAPSHOT_STD_DEV, metricData);
@@ -307,18 +309,13 @@ public class CloudWatchReporter extends ScheduledReporter {
     }
 
     /**
-     * Submits metrics that show some data in order to:
+     * Please note, the reported values submitted only if they show some data (greater than zero) in order to:
      * <p>
      * 1. save some money
+     * 2. prevent com.amazonaws.services.cloudwatch.model.InvalidParameterValueException if empty {@link Snapshot}
+     * is submitted
      * <p>
      * If {@link Builder#withZeroValuesSubmission()} is {@code true}, then all values will be submitted
-     *
-     * @param metricConfigured
-     * @param metricName
-     * @param metricValue
-     * @param standardUnit
-     * @param dimensionValue
-     * @param metricData
      */
     private void stageMetricDatum(final boolean metricConfigured,
                                   final String metricName,
@@ -326,8 +323,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                                   final StandardUnit standardUnit,
                                   final String dimensionValue,
                                   final List<MetricDatum> metricData) {
-        // Only submit metrics that show some data, so let's:
-        // - save some money
+        // Only submit metrics that show some data, so let's save some money
         if (metricConfigured && (builder.withZeroValuesSubmission || metricValue > 0)) {
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
