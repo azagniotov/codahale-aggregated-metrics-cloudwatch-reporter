@@ -1,6 +1,6 @@
 # CodaHale Aggregated Metrics CloudWatch Reporter
 
-This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (formerly CodaHale & Yammer Metrics). The reporter is an implementation of [ScheduledReporter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/ScheduledReporter.html) from Dropwizard Metrics v4.0.1 
+This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (formerly CodaHale & Yammer Metrics). The reporter is an implementation of [ScheduledReporter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/ScheduledReporter.html) from Dropwizard Metrics v4.0.0 
 
 ## Table of Contents
 
@@ -83,15 +83,15 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.6")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.7")
 }
 ```
 
 The library fetches the following transitive dependencies:
 
 ```
-    io.dropwizard.metrics:metrics-core:4.0.1
-    io.dropwizard.metrics:metrics-jvm:4.0.1
+    io.dropwizard.metrics:metrics-core:4.0.0
+    io.dropwizard.metrics:metrics-jvm:4.0.0
     com.amazonaws:aws-java-sdk-cloudwatch:1.11.179
     com.google.guava:guava:21.0
 ```
@@ -145,6 +145,9 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+#### 1.0.7
+* PR [#11](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/11) Upgraded Metrics to `v4.0.0` (https://github.com/fr3dch3n)
 
 #### 1.0.6
 * Issue [#8](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/issues/8): Make it configurable to send zero values.
