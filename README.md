@@ -73,9 +73,11 @@ The __only__ metrics that are reportable __by default__  are:
 All other metrics have to be confugured for reporting by invoking their respective `withXXXX()` methods on the `CloudWatchReporter.Builder` instance
 
 
-### Dependencies
+### Using the library
 
-Gradle
+The library artifact ID is `dropwizard-metrics-cloudwatch` if you want to [search for it on Maven Central](https://search.maven.org/#search%7Cga%7C1%7Ca%3A%22dropwizard-metrics-cloudwatch%22)
+
+The following is an example how to include the library in your project using Gradle:
 
 ```
 repositories {
@@ -86,6 +88,8 @@ dependencies {
     compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.7")
 }
 ```
+
+### Dependencies
 
 The library fetches the following transitive dependencies:
 
