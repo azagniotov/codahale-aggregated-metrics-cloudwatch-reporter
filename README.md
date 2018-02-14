@@ -8,6 +8,7 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
   - [Summary](#summary)
   - [Reportable Metrics](#reportable-metrics)
   - [Defaults](#defaults)
+  - [Using the library](#using-the-library)
   - [Dependencies](#dependencies)
   - [Usage](#usage)
     - [Dry run](#dry-run)
