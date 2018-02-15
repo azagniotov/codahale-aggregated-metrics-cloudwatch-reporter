@@ -8,8 +8,8 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
   - [Summary](#summary)
   - [Reportable Metrics](#reportable-metrics)
   - [Defaults](#defaults)
-  - [Using the library](#using-the-library)
-  - [Dependencies](#dependencies)
+  - [Adding cloudwatch reporter to your project](#adding-cloudwatch-reporter-to-your-project)
+  - [Third-party dependencies](#third-party-dependencies)
   - [Usage](#usage)
     - [Dry run](#dry-run)
   - [Credits](#credits)
@@ -74,7 +74,7 @@ The __only__ metrics that are reportable __by default__  are:
 All other metrics have to be confugured for reporting by invoking their respective `withXXXX()` methods on the `CloudWatchReporter.Builder` instance
 
 
-### Using the library
+### Adding cloudwatch reporter to your project
 
 The library artifact ID is `dropwizard-metrics-cloudwatch` if you want to [search for it on Maven Central](https://search.maven.org/#search%7Cga%7C1%7Ca%3A%22dropwizard-metrics-cloudwatch%22)
 
@@ -90,7 +90,7 @@ dependencies {
 }
 ```
 
-### Dependencies
+### Third-party dependencies
 
 The library fetches the following transitive dependencies:
 
