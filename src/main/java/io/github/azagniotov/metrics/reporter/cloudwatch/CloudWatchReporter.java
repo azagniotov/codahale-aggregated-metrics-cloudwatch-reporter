@@ -26,11 +26,13 @@ import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
+import io.github.azagniotov.metrics.reporter.utils.CollectionsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -150,10 +152,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                 processTimer(timerEntry.getKey(), timerEntry.getValue(), metricData);
             }
 
-            final List<List<MetricDatum>> metricDataPartitions = new ArrayList<>();
-            for (int i = 0; i < metricData.size(); i += MAXIMUM_DATUMS_PER_REQUEST) {
-                metricDataPartitions.add(metricData.subList(i, Math.min(i + MAXIMUM_DATUMS_PER_REQUEST, metricData.size())));
-            }
+            final Collection<List<MetricDatum>> metricDataPartitions = CollectionsUtils.partition(metricData, MAXIMUM_DATUMS_PER_REQUEST);
             final List<Future<PutMetricDataResult>> cloudWatchFutures = new ArrayList<>(metricData.size());
 
             for (final List<MetricDatum> partition : metricDataPartitions) {
