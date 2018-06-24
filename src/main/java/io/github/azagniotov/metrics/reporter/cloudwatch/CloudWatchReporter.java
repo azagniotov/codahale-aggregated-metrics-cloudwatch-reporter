@@ -26,10 +26,6 @@ import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +40,9 @@ import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 /**
  * Reports metrics to <a href="http://aws.amazon.com/cloudwatch/">Amazon's CloudWatch</a> periodically.
@@ -59,22 +57,22 @@ public class CloudWatchReporter extends ScheduledReporter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudWatchReporter.class);
 
-    @VisibleForTesting
+    // Visible for testing
     static final String DIMENSION_NAME_TYPE = "Type";
 
-    @VisibleForTesting
+    // Visible for testing
     static final String DIMENSION_GAUGE = "gauge";
 
-    @VisibleForTesting
+    // Visible for testing
     static final String DIMENSION_COUNT = "count";
 
-    @VisibleForTesting
+    // Visible for testing
     static final String DIMENSION_SNAPSHOT_SUMMARY = "snapshot-summary";
 
-    @VisibleForTesting
+    // Visible for testing
     static final String DIMENSION_SNAPSHOT_MEAN = "snapshot-mean";
 
-    @VisibleForTesting
+    // Visible for testing
     static final String DIMENSION_SNAPSHOT_STD_DEV = "snapshot-std-dev";
 
     /**
@@ -152,8 +150,11 @@ public class CloudWatchReporter extends ScheduledReporter {
                 processTimer(timerEntry.getKey(), timerEntry.getValue(), metricData);
             }
 
-            final Iterable<List<MetricDatum>> metricDataPartitions = Iterables.partition(metricData, MAXIMUM_DATUMS_PER_REQUEST);
-            final List<Future<PutMetricDataResult>> cloudWatchFutures = Lists.newArrayListWithExpectedSize(metricData.size());
+            final List<List<MetricDatum>> metricDataPartitions = new ArrayList<>();
+            for (int i = 0; i < metricData.size(); i += MAXIMUM_DATUMS_PER_REQUEST) {
+                metricDataPartitions.add(metricData.subList(i, Math.min(i + MAXIMUM_DATUMS_PER_REQUEST, metricData.size())));
+            }
+            final List<Future<PutMetricDataResult>> cloudWatchFutures = new ArrayList<>(metricData.size());
 
             for (final List<MetricDatum> partition : metricDataPartitions) {
                 final PutMetricDataRequest putMetricDataRequest = new PutMetricDataRequest()
@@ -702,7 +703,7 @@ public class CloudWatchReporter extends ScheduledReporter {
          */
         public Builder withGlobalDimensions(final String... dimensions) {
             for (final String pair : dimensions) {
-                final List<String> splitted = Splitter.on('=').trimResults().splitToList(pair);
+                final List<String> splitted = Stream.of(pair.split("=")).map(String::trim).collect(Collectors.toList());
                 this.globalDimensions.add(new Dimension().withName(splitted.get(0)).withValue(splitted.get(1)));
             }
             return this;
