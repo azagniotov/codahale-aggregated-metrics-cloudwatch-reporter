@@ -86,7 +86,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.7")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.8")
 }
 ```
 
@@ -149,6 +149,9 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+#### 1.0.8
+* PR [#14](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/14) Replaced Guava usages with Java 8 native APIs (https://github.com/skuehn)
 
 #### 1.0.7
 * PR [#11](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/11) Upgraded Metrics to `v4.0.0` (https://github.com/fr3dch3n)
