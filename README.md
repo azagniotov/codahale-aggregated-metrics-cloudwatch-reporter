@@ -1,6 +1,6 @@
 # CodaHale Aggregated Metrics CloudWatch Reporter
 
-This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (formerly CodaHale & Yammer Metrics). The reporter is an implementation of [ScheduledReporter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/ScheduledReporter.html) from Dropwizard Metrics v4.0.0 
+This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (formerly CodaHale & Yammer Metrics). The reporter is an implementation of [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html) from Dropwizard Metrics v4.0.2 
 
 ## Table of Contents
 
@@ -23,27 +23,27 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 ### Summary
 
 - This CloudWatchReporter reports the metric data to CloudWatch asynchronously using the [AmazonCloudWatchAsyncClient (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/AmazonCloudWatchAsyncClient.html) interface 
-- Each reportable value in CodeHale [Metric](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Metric.html) is reported as a separate [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html) 
-- When reporting [Meter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Meter.html), [Counter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html) count metrics (`getCount()`) as [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html), only the count difference since the last report is reported. This way the counters do not require a reset within the application using this reporter.
-- If configured, each [Snapshot](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Snapshot.html) translated into [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html) in the most direct way possible.
+- Each reportable value in CodeHale [Metric](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Metric.html) is reported as a separate [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html) 
+- When reporting [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html), [Counter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Counter.html), [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) count metrics (`getCount()`) as [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html), only the count difference since the last report is reported. This way the counters do not require a reset within the application using this reporter.
+- If configured, each [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) translated into [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html) in the most direct way possible.
 - If configured, JVM statistic is reported
 
 ### Reportable Metrics
 
 Currently the only metric values that are reportable through configuration are:
 
-- Values of type `Number` from [Gauge](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Gauge.html)
-- Counts from [Counter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Histogram.html), [Meter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Meter.html) and [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html)
-- Percentiles from [Snapshot](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Snapshot.html) in [Histogram](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html)
-- Arithmetic mean & standard deviation of [Snapshot](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Snapshot.html) values in [Histogram](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html)
-- Mean rates from [Meter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Meter.html) and [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html)
-- Summaries of [Snapshot](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Snapshot.html) values in [Histogram](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html) as [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html)
+- Values of type `Number` from [Gauge](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Gauge.html)
+- Counts from [Counter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Counter.html), [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html), [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
+- Percentiles from [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) in [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
+- Arithmetic mean & standard deviation of [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) values in [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
+- Mean rates from [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
+- Summaries of [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) values in [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) as [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html)
 
 __Please note__:
 
-- [Histogram](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Histogram.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Snapshot.html)) are reported __raw__.
-- [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Snapshot.html)) are reported after conversion by a duration factor was applied. The duration factor is calculated by converting `1` unit of `duration unit` type to `nanoseconds` (see [ScheduledReporter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/ScheduledReporter.html))
-- [Meter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Meter.html) values (the `1min rate`, `5min rate`, `15min rate` & `mean rate`) are reported after conversion by a rate factor was applied. The rate factor is calculated by converting `1` unit of `rate unit` type to `seconds` (see [ScheduledReporter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/ScheduledReporter.html))
+- [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html)) are reported __raw__.
+- [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html)) are reported after conversion by a duration factor was applied. The duration factor is calculated by converting `1` unit of `duration unit` type to `nanoseconds` (see [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html))
+- [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html) values (the `1min rate`, `5min rate`, `15min rate` & `mean rate`) are reported after conversion by a rate factor was applied. The rate factor is calculated by converting `1` unit of `rate unit` type to `seconds` (see [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html))
 
 ### Defaults
 
@@ -68,8 +68,8 @@ The Reporter uses the following defaults which can be configured:
 
 The __only__ metrics that are reportable __by default__  are:
 
-- Count values (`getCount()`) from [Meter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Meter.html), [Counter](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Counter.html), [Histogram](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html) 
-- Percentile values (`75%`, `95%`, `99.9%`) from [Histogram](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Histogram.html) and [Timer](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Timer.html)
+- Count values (`getCount()`) from [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html), [Counter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Counter.html), [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) 
+- Percentile values (`75%`, `95%`, `99.9%`) from [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
 
 All other metrics have to be confugured for reporting by invoking their respective `withXXXX()` methods on the `CloudWatchReporter.Builder` instance
 
@@ -86,7 +86,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.8")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.9")
 }
 ```
 
@@ -95,8 +95,8 @@ dependencies {
 The library fetches the following transitive dependencies:
 
 ```
-    io.dropwizard.metrics:metrics-core:4.0.0
-    io.dropwizard.metrics:metrics-jvm:4.0.0
+    io.dropwizard.metrics:metrics-core:4.0.2
+    io.dropwizard.metrics:metrics-jvm:4.0.2
     com.amazonaws:aws-java-sdk-cloudwatch:1.11.179
 ```
 
@@ -104,7 +104,7 @@ The library fetches the following transitive dependencies:
 
 ### Usage
 
-The reporter provides a fine-grained configuration options through its builder to configure what metrics should be reported to CloudWatch. Since AWS costs money, you probably do not want to report `all` the values from [Metric](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Metric.html) classes or [Snapshot](http://metrics.dropwizard.io/4.0.0/apidocs/com/codahale/metrics/Snapshot.html), but only what's really useful to you.
+The reporter provides a fine-grained configuration options through its builder to configure what metrics should be reported to CloudWatch. Since AWS costs money, you probably do not want to report `all` the values from [Metric](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Metric.html) classes or [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html), but only what's really useful to you.
 
 
 ```
@@ -149,6 +149,9 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+#### 1.0.9
+* PR [#16](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/16) Update Metrics dependency to `v4.0.2` to fix `java.lang.IncompatibleClassChangeError` (https://github.com/jkgeyti)
 
 #### 1.0.8
 * PR [#14](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/14) Replaced Guava usages with Java 8 native APIs (https://github.com/skuehn)
