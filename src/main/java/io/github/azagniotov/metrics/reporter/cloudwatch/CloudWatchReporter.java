@@ -220,9 +220,15 @@ public class CloudWatchReporter extends ScheduledReporter {
             lastCount = 0L;
         }
 
-        // Only submit metrics that have changed - let's save some money!
-        final long delta = currentCount - lastCount;
-        stageMetricDatum(true, metricName, delta, StandardUnit.Count, DIMENSION_COUNT, metricData);
+        final long reportValue;
+        if (builder.withReportRawCountValue) {
+            reportValue = currentCount;
+        } else {
+            // Only submit metrics that have changed - let's save some money!
+            reportValue = currentCount - lastCount;
+        }
+
+        stageMetricDatum(true, metricName, reportValue, StandardUnit.Count, DIMENSION_COUNT, metricData);
     }
 
     /**
@@ -464,6 +470,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         private boolean withZeroValuesSubmission;
         private boolean withStatisticSet;
         private boolean withJvmMetrics;
+        private boolean withReportRawCountValue;
         private MetricFilter metricFilter;
         private TimeUnit rateUnit;
         private TimeUnit durationUnit;
@@ -666,6 +673,18 @@ public class CloudWatchReporter extends ScheduledReporter {
          */
         public Builder withZeroValuesSubmission() {
             withZeroValuesSubmission = true;
+            return this;
+        }
+
+        /**
+         * Will report the raw value of count metrics instead of reporting only the count difference since the last
+         * report
+         * {@code false} by default.
+         *
+         * @return {@code this}
+         */
+        public Builder withReportRawCountValue() {
+            withReportRawCountValue = true;
             return this;
         }
 
