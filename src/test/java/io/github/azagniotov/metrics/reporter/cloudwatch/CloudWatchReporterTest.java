@@ -447,7 +447,31 @@ public class CloudWatchReporterTest {
         assertThat(secondMetricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(4);
         assertThat(secondMetricData.getStatisticValues().getSum().intValue()).isEqualTo(115);
         assertThat(secondMetricData.getUnit()).isEqualTo(None.toString());
+    }
 
+    @Test
+    public void shouldNotReportCounterValueDeltaWhenReportingRawCountValue() throws Exception {
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        final CloudWatchReporter cloudWatchReporter = reporterBuilder.withReportRawCountValue().build();
+
+        cloudWatchReporter.report();
+        MetricDatum metricDatum = firstMetricDatumFromCapturedRequest();
+        assertThat(metricDatum.getValue().intValue()).isEqualTo(2);
+        metricDataRequestCaptor.getAllValues().clear();
+
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+
+        cloudWatchReporter.report();
+        metricDatum = firstMetricDatumFromCapturedRequest();
+        assertThat(metricDatum.getValue().intValue()).isEqualTo(8);
+
+        verify(mockAmazonCloudWatchAsyncClient, times(2)).putMetricDataAsync(any(PutMetricDataRequest.class));
     }
 
     private MetricDatum metricDatumByDimensionFromCapturedRequest(final String dimensionValue) {
