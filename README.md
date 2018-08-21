@@ -86,7 +86,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.9")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.10")
 }
 ```
 
@@ -150,6 +150,9 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+#### 1.0.10
+* PR [#17](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/17) Add option to report raw count values instead of delta values (https://github.com/fyi-coursera)
 
 #### 1.0.9
 * PR [#16](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/16) Update Metrics dependency to `v4.0.2` to fix `java.lang.IncompatibleClassChangeError` (https://github.com/jkgeyti)
