@@ -5,7 +5,6 @@ import com.amazonaws.services.cloudwatch.model.Dimension;
 import com.amazonaws.services.cloudwatch.model.MetricDatum;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataResult;
-import com.amazonaws.services.cloudwatch.model.StandardUnit;
 import com.codahale.metrics.EWMA;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static com.amazonaws.services.cloudwatch.model.StandardUnit.Count;
 import static com.amazonaws.services.cloudwatch.model.StandardUnit.Microseconds;
@@ -206,21 +204,6 @@ public class CloudWatchReporterTest {
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
         assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("mean-rate [per-second]"));
-    }
-
-    @Test
-    public void reportedMeterShouldHaveChangedUnit() throws Exception {
-        metricRegistry.meter(ARBITRARY_METER_NAME).mark(1);
-        CloudWatchReporter.Builder builder = reporterBuilder.withMeanRate().withMeterReportUnit(StandardUnit.Terabytes);
-        CloudWatchReporter cloudWatchReporter = builder.build();
-        cloudWatchReporter.report();
-
-        final List<MetricDatum> metricData = allMetricDataFromCapturedRequests();
-
-        List<MetricDatum> filtered = metricData.stream().filter(x -> !x.getUnit().equals(Count.toString())).collect(Collectors.toList());
-
-        assertThat(filtered.size()).isEqualTo(1);
-        assertThat(filtered.get(0).getUnit()).isEqualTo(StandardUnit.Terabytes.toString());
     }
 
     @Test
@@ -512,11 +495,6 @@ public class CloudWatchReporterTest {
     private MetricDatum firstMetricDatumFromCapturedRequest() {
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
         return putMetricDataRequest.getMetricData().get(0);
-    }
-
-    private List<MetricDatum> allMetricDataFromCapturedRequests() {
-        final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
-        return putMetricDataRequest.getMetricData();
     }
 
     private List<Dimension> firstMetricDatumDimensionsFromCapturedRequest() {

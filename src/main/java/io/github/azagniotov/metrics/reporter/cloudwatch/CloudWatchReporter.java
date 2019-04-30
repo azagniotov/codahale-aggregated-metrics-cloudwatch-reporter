@@ -727,16 +727,6 @@ public class CloudWatchReporter extends ScheduledReporter {
             return this;
         }
 
-        /**
-         * Send Meters in other Unit than the DurationUnit. Usefull if the metered metric does not contain timeunits
-         * @param reportUnit the Unit which is set as metadata on meter reports.
-         * @return {@code this}
-         */
-        public Builder withMeterReportUnit(final StandardUnit reportUnit) {
-            this.cwRateUnit = reportUnit;
-            return this;
-        }
-
         public CloudWatchReporter build() {
 
             if (withJvmMetrics) {
@@ -749,6 +739,9 @@ public class CloudWatchReporter extends ScheduledReporter {
                 metricRegistry.register("jvm.memory", new MemoryUsageGaugeSet());
                 metricRegistry.register("jvm.thread-states", new ThreadStatesGaugeSet());
             }
+
+            cwRateUnit = toStandardUnit(rateUnit);
+            cwDurationUnit = toStandardUnit(durationUnit);
 
             return new CloudWatchReporter(this);
         }
