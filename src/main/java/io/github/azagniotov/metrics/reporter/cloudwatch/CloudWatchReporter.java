@@ -78,6 +78,13 @@ public class CloudWatchReporter extends ScheduledReporter {
     static final String DIMENSION_SNAPSHOT_STD_DEV = "snapshot-std-dev";
 
     /**
+     * PutMetricData function accepts an optional StorageResolution parameter.
+     * 1 = publish high-resolution metrics, 60 = publish at standard 1-minute resolution.
+    */
+    private static final int HIGH_RESOLUTION = 1;
+    private static final int STANDARD_RESOLUTION = 60;
+
+    /**
      * Amazon CloudWatch rejects values that are either too small or too large.
      * Values must be in the range of 8.515920e-109 to 1.174271e+108 (Base 10) or 2e-360 to 2e360 (Base 2).
      * <p>
@@ -102,6 +109,7 @@ public class CloudWatchReporter extends ScheduledReporter {
     private final AmazonCloudWatchAsync cloudWatchAsyncClient;
     private final StandardUnit rateUnit;
     private final StandardUnit durationUnit;
+    private final boolean highResolution;
 
     private CloudWatchReporter(final Builder builder) {
         super(builder.metricRegistry, "coda-hale-metrics-cloud-watch-reporter", builder.metricFilter, builder.rateUnit, builder.durationUnit);
@@ -111,6 +119,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         this.lastPolledCounts = new ConcurrentHashMap<>();
         this.rateUnit = builder.cwRateUnit;
         this.durationUnit = builder.cwDurationUnit;
+        this.highResolution = builder.highResolution;
     }
 
     @Override
@@ -339,6 +348,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                     .withValue(cleanMetricValue(metricValue))
                     .withMetricName(metricName)
                     .withDimensions(dimensions)
+                    .withStorageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
                     .withUnit(standardUnit));
         }
     }
@@ -478,6 +488,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         private StandardUnit cwDurationUnit;
         private Set<Dimension> globalDimensions;
         private final Clock clock;
+        private boolean highResolution;
 
         private Builder(final MetricRegistry metricRegistry, final AmazonCloudWatchAsync cloudWatchAsyncClient, final String namespace) {
             this.metricRegistry = metricRegistry;
@@ -724,6 +735,11 @@ public class CloudWatchReporter extends ScheduledReporter {
                 final List<String> splitted = Stream.of(pair.split("=")).map(String::trim).collect(Collectors.toList());
                 this.globalDimensions.add(new Dimension().withName(splitted.get(0)).withValue(splitted.get(1)));
             }
+            return this;
+        }
+
+        public Builder withHighResolution() {
+            this.highResolution = true;
             return this;
         }
 
