@@ -88,6 +88,26 @@ public class CloudWatchReporterTest {
     }
 
     @Test
+    public void notSettingHighResolutionGeneratesMetricsWithStorageResolutionSetToSixty() throws Exception {
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        reporterBuilder.build().report();
+
+        final MetricDatum firstMetricDatum = firstMetricDatumFromCapturedRequest();
+        
+        assertThat(firstMetricDatum.getStorageResolution()).isEqualTo(60);
+    }
+
+    @Test
+    public void settingHighResolutionGeneratesMetricsWithStorageResolutionSetToOne() throws Exception {
+        metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
+        reporterBuilder.withHighResolution().build().report();
+
+        final MetricDatum firstMetricDatum = firstMetricDatumFromCapturedRequest();
+
+        assertThat(firstMetricDatum.getStorageResolution()).isEqualTo(1);
+    }
+
+    @Test
     public void shouldReportWithoutGlobalDimensionsWhenGlobalDimensionsNotConfigured() throws Exception {
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
         reporterBuilder.build().report(); // When 'withGlobalDimensions' was not called

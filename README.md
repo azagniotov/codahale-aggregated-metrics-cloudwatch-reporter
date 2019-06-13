@@ -53,6 +53,7 @@ The Reporter uses the following defaults which can be configured:
 - Duration metrics are in `TimeUnit.Milliseconds`
 - `MetricFilter.ALL` will be used for the Filter
 - `Clock.defaultClock()` will be used for the Clock (Unconfigurable)
+- Metrics are reported using standard resolution (can be changed to [high resolution](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html#high-resolution-metrics))
 - Empty global [Dimension (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/Dimension.html) list
 - The reporter adds a `Type` [Dimension (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/Dimension.html) to each reported metric, e.g:
 
@@ -131,6 +132,7 @@ The reporter provides a fine-grained configuration options through its builder t
                     .withGlobalDimensions("Region=us-west-2", "Instance=stage")
                     .withZeroValuesSubmission()
                     .withReportRawCountValue()
+                    .withHighResolution()
                     .withDryRun()
                     .build();
 
