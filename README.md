@@ -87,7 +87,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.11")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.12")
 }
 ```
 
@@ -152,6 +152,9 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+#### 1.0.12
+* PR [#22](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/22) Provides the possibility to report metrics to AWS using high resolution (https://github.com/jebl01)
 
 #### 1.0.11
 * PR [#21](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/21) Removing logging implementation (https://github.com/anilkumarmyla)
