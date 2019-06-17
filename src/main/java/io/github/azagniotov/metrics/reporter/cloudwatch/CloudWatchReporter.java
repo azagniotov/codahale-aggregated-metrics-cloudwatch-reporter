@@ -117,7 +117,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         this.namespace = builder.namespace;
         this.cloudWatchAsyncClient = builder.cloudWatchAsyncClient;
         this.lastPolledCounts = new ConcurrentHashMap<>();
-        this.rateUnit = builder.cwRateUnit;
+        this.rateUnit = builder.cwMeterUnit;
         this.durationUnit = builder.cwDurationUnit;
         this.highResolution = builder.highResolution;
     }
@@ -278,16 +278,16 @@ public class CloudWatchReporter extends ScheduledReporter {
         if (builder.withZeroValuesSubmission || snapshot.size() > 0) {
             for (final Percentile percentile : builder.percentiles) {
                 final double convertedDuration = convertDuration(snapshot.getValue(percentile.getQuantile()));
-                stageMetricDatum(true, metricName, convertedDuration, durationUnit, percentile.getDesc(), metricData);
+                stageMetricDatum(true, metricName, convertedDuration, rateUnit, percentile.getDesc(), metricData);
             }
         }
 
         // prevent empty snapshot from causing InvalidParameterValueException
         if (snapshot.size() > 0) {
             final String formattedDuration = String.format(" [in-%s]", getDurationUnit());
-            stageMetricDatum(builder.withArithmeticMean, metricName, convertDuration(snapshot.getMean()), durationUnit, DIMENSION_SNAPSHOT_MEAN + formattedDuration, metricData);
-            stageMetricDatum(builder.withStdDev, metricName, convertDuration(snapshot.getStdDev()), durationUnit, DIMENSION_SNAPSHOT_STD_DEV + formattedDuration, metricData);
-            stageMetricDatumWithConvertedSnapshot(builder.withStatisticSet, metricName, snapshot, durationUnit, metricData);
+            stageMetricDatum(builder.withArithmeticMean, metricName, convertDuration(snapshot.getMean()), rateUnit, DIMENSION_SNAPSHOT_MEAN + formattedDuration, metricData);
+            stageMetricDatum(builder.withStdDev, metricName, convertDuration(snapshot.getStdDev()), rateUnit, DIMENSION_SNAPSHOT_STD_DEV + formattedDuration, metricData);
+            stageMetricDatumWithConvertedSnapshot(builder.withStatisticSet, metricName, snapshot, rateUnit, metricData);
         }
     }
 
@@ -484,7 +484,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         private MetricFilter metricFilter;
         private TimeUnit rateUnit;
         private TimeUnit durationUnit;
-        private StandardUnit cwRateUnit;
+        private StandardUnit cwMeterUnit;
         private StandardUnit cwDurationUnit;
         private Set<Dimension> globalDimensions;
         private final Clock clock;
@@ -499,7 +499,7 @@ public class CloudWatchReporter extends ScheduledReporter {
             this.rateUnit = TimeUnit.SECONDS;
             this.durationUnit = TimeUnit.MILLISECONDS;
             this.globalDimensions = new LinkedHashSet<>();
-            this.cwRateUnit = toStandardUnit(rateUnit);
+            this.cwMeterUnit = toStandardUnit(rateUnit);
             this.cwDurationUnit = toStandardUnit(durationUnit);
             this.clock = Clock.defaultClock();
         }
@@ -743,6 +743,16 @@ public class CloudWatchReporter extends ScheduledReporter {
             return this;
         }
 
+        /**
+         * Send Meters in other Unit than the DurationUnit. Usefull if the metered metric does not contain timeunits
+         * @param reportUnit the Unit which is set as metadata on meter reports.
+         * @return {@code this}
+         */
+        public Builder withMeterUnitSentToCW(final StandardUnit reportUnit) {
+            this.cwMeterUnit = reportUnit;
+            return this;
+        }
+
         public CloudWatchReporter build() {
 
             if (withJvmMetrics) {
@@ -755,9 +765,6 @@ public class CloudWatchReporter extends ScheduledReporter {
                 metricRegistry.register("jvm.memory", new MemoryUsageGaugeSet());
                 metricRegistry.register("jvm.thread-states", new ThreadStatesGaugeSet());
             }
-
-            cwRateUnit = toStandardUnit(rateUnit);
-            cwDurationUnit = toStandardUnit(durationUnit);
 
             return new CloudWatchReporter(this);
         }

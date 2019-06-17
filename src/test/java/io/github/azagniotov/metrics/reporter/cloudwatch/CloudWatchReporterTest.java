@@ -5,6 +5,7 @@ import com.amazonaws.services.cloudwatch.model.Dimension;
 import com.amazonaws.services.cloudwatch.model.MetricDatum;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
 import com.amazonaws.services.cloudwatch.model.PutMetricDataResult;
+import com.amazonaws.services.cloudwatch.model.StandardUnit;
 import com.codahale.metrics.EWMA;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.amazonaws.services.cloudwatch.model.StandardUnit.Count;
 import static com.amazonaws.services.cloudwatch.model.StandardUnit.Microseconds;
@@ -227,6 +229,21 @@ public class CloudWatchReporterTest {
     }
 
     @Test
+    public void reportedMeterShouldHaveChangedUnit() throws Exception {
+        metricRegistry.meter(ARBITRARY_METER_NAME).mark(1);
+        CloudWatchReporter.Builder builder = reporterBuilder.withMeanRate().withMeterUnitSentToCW(StandardUnit.Terabytes);
+        CloudWatchReporter cloudWatchReporter = builder.build();
+        cloudWatchReporter.report();
+
+        final List<MetricDatum> metricData = allMetricDataFromCapturedRequests();
+
+        List<MetricDatum> filtered = metricData.stream().filter(x -> !x.getUnit().equals(Count.toString())).collect(Collectors.toList());
+
+        assertThat(filtered.size()).isEqualTo(1);
+        assertThat(filtered.get(0).getUnit()).isEqualTo(StandardUnit.Terabytes.toString());
+    }
+
+    @Test
     public void reportedHistogramShouldContainExpectedArithmeticMeanDimension() throws Exception {
         metricRegistry.histogram(ARBITRARY_HISTOGRAM_NAME).update(1);
         reporterBuilder.withArithmeticMean().build().report();
@@ -353,7 +370,7 @@ public class CloudWatchReporterTest {
     @Test
     public void shouldReportArithmeticMeanAfterConversionByDefaultDurationWhenReportingTimer() throws Exception {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(1_000_000, TimeUnit.NANOSECONDS);
-        reporterBuilder.withArithmeticMean().build().report();
+        reporterBuilder.withArithmeticMean().withMeterUnitSentToCW(Milliseconds).build().report();
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-mean [in-milliseconds]");
 
@@ -367,7 +384,7 @@ public class CloudWatchReporterTest {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(2_000_000, TimeUnit.NANOSECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3_000_000, TimeUnit.NANOSECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(30_000_000, TimeUnit.NANOSECONDS);
-        reporterBuilder.withStdDev().build().report();
+        reporterBuilder.withStdDev().withMeterUnitSentToCW(Milliseconds).build().report();
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-std-dev [in-milliseconds]");
 
@@ -381,7 +398,7 @@ public class CloudWatchReporterTest {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(2, TimeUnit.SECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3, TimeUnit.SECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(30, TimeUnit.SECONDS);
-        reporterBuilder.withStatisticSet().convertDurationsTo(TimeUnit.MICROSECONDS).build().report();
+        reporterBuilder.withStatisticSet().convertDurationsTo(TimeUnit.MICROSECONDS).withMeterUnitSentToCW(Microseconds).build().report();
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
@@ -515,6 +532,11 @@ public class CloudWatchReporterTest {
     private MetricDatum firstMetricDatumFromCapturedRequest() {
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
         return putMetricDataRequest.getMetricData().get(0);
+    }
+
+    private List<MetricDatum> allMetricDataFromCapturedRequests() {
+        final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
+        return putMetricDataRequest.getMetricData();
     }
 
     private List<Dimension> firstMetricDatumDimensionsFromCapturedRequest() {
