@@ -45,6 +45,29 @@ __Please note__:
 - [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html)) are reported after conversion by a duration factor was applied. The duration factor is calculated by converting `1` unit of `duration unit` type to `nanoseconds` (see [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html))
 - [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html) values (the `1min rate`, `5min rate`, `15min rate` & `mean rate`) are reported after conversion by a rate factor was applied. The rate factor is calculated by converting `1` unit of `rate unit` type to `seconds` (see [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html))
 
+### Metric Dimensions
+A dimension is a name/value pair that helps you to uniquely identify a metric. Every metric has specific characteristics that describe
+it, and you can think of dimensions as categories for those characteristics.
+
+#### Global Dimensions
+The reporter can be configured with a set of global dimensions. These will be added to all reported metrics.
+
+#### Per Metric Dimensions
+The reporter will look for dimensions encoded in the metric name when the metric is reported.
+To add dimensions to a metric, encode them inside square brackets at the end of the metric name;
+
+`"metricName[dimension1=value1,dimension2=value2]"`
+
+Use `DimensionedName` to more easily create metric names with dimensions;
+```java
+final DimensionedName dimensionedName = new DimensionedNameBuilder("counterName")
+            .addDimension(new Dimension().withName("key1").withValue("value1"))
+            .addDimension(new Dimension().withName("key2").withValue("value2"))
+            .build();
+
+metricRegistry.counter(dimensionedName.encode()).inc();
+````
+
 ### Defaults
 
 The Reporter uses the following defaults which can be configured:
