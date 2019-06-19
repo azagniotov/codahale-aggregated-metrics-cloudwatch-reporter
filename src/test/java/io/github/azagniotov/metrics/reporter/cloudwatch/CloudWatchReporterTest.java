@@ -280,9 +280,11 @@ public class CloudWatchReporterTest {
 
     @Test
     public void shouldReportExpectedGlobalAndCustomDimensions() throws Exception {
-        metricRegistry.counter(new DimensionedNameBuilder(ARBITRARY_COUNTER_NAME)
-            .addDimension(new Dimension().withName("key1").withValue("value1"))
-            .addDimension(new Dimension().withName("key2").withValue("value2"))
+
+
+        metricRegistry.counter(DimensionedName.withName(ARBITRARY_COUNTER_NAME)
+            .withDimension("key1", "value1")
+            .withDimension("key2", "value2")
             .build().encode()).inc();
         reporterBuilder.withGlobalDimensions("Region=us-west-2").build().report();
 

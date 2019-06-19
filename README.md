@@ -56,17 +56,39 @@ The reporter can be configured with a set of global dimensions. These will be ad
 The reporter will look for dimensions encoded in the metric name when the metric is reported.
 To add dimensions to a metric, encode them inside square brackets at the end of the metric name;
 
-`"metricName[dimension1=value1,dimension2=value2]"`
+`"metricName[dimension1:value1,dimension2:value2]"`
 
 Use `DimensionedName` to more easily create metric names with dimensions;
+
 ```java
-final DimensionedName dimensionedName = new DimensionedNameBuilder("counterName")
-            .addDimension(new Dimension().withName("key1").withValue("value1"))
-            .addDimension(new Dimension().withName("key2").withValue("value2"))
-            .build();
+final DimensionedName dimensionedName = DimensionedName.withName("test")
+        .withDimension("key1", "val1")
+        .withDimension("key2", "val2")
+        .withDimension("key3", "val3")
+        .build();
 
 metricRegistry.counter(dimensionedName.encode()).inc();
 ````
+
+It's also possible to derive a new `DimensionedName` from an existing one; 
+```java
+final DimensionedName dimensionedName = DimensionedName
+        .withName("test")
+        .withDimension("key1", "val1")
+        .withDimension("key2", "val2")
+        .withDimension("key3", "val3")
+        .build();
+
+final DimensionedName derivedDimensionedName = dimensionedName
+        .withDimension("key3", "replaced_value")
+        .withDimension("key4", "val4")
+        .build();
+
+metricRegistry.counter(dimensionedName.encode()).inc();
+metricRegistry.counter(derivedDimensionedName.encode()).inc();
+````
+
+Since `DimensionedName` is immutable, the string representation returned by `encode()` is cached. Multiple calls to `encode()` will return the same `String`. 
 
 ### Defaults
 

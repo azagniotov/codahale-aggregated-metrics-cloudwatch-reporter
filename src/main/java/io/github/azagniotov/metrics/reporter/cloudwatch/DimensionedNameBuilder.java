@@ -1,24 +1,28 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
 import com.amazonaws.services.cloudwatch.model.Dimension;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DimensionedNameBuilder {
   private final String name;
-  private Set<Dimension> dimensions = new HashSet<>();
+  private Map<String, Dimension> dimensions;
 
-  public DimensionedNameBuilder(final String name) {
-    this.name = name;
+  DimensionedNameBuilder(final String name) {
+    this(name, new HashMap<>());
   }
 
-
-  public DimensionedNameBuilder addDimension(final Dimension dimension) {
-    this.dimensions.add(dimension);
-    return this;
+  DimensionedNameBuilder(final String name, final Map<String, Dimension> dimensions) {
+    this.name = name;
+    this.dimensions = dimensions;
   }
 
   public DimensionedName build() {
     return new DimensionedName(this.name, this.dimensions);
+  }
+
+  public DimensionedNameBuilder withDimension(final String name, final String value) {
+    this.dimensions.put(name, new Dimension().withName(name).withValue(value));
+    return this;
   }
 }
