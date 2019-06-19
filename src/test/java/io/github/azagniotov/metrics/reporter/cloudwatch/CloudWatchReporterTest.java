@@ -370,7 +370,7 @@ public class CloudWatchReporterTest {
     @Test
     public void shouldReportArithmeticMeanAfterConversionByDefaultDurationWhenReportingTimer() throws Exception {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(1_000_000, TimeUnit.NANOSECONDS);
-        reporterBuilder.withArithmeticMean().withMeterUnitSentToCW(Milliseconds).build().report();
+        reporterBuilder.withArithmeticMean().build().report();
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-mean [in-milliseconds]");
 
@@ -384,7 +384,7 @@ public class CloudWatchReporterTest {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(2_000_000, TimeUnit.NANOSECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3_000_000, TimeUnit.NANOSECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(30_000_000, TimeUnit.NANOSECONDS);
-        reporterBuilder.withStdDev().withMeterUnitSentToCW(Milliseconds).build().report();
+        reporterBuilder.withStdDev().build().report();
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-std-dev [in-milliseconds]");
 
@@ -398,7 +398,7 @@ public class CloudWatchReporterTest {
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(2, TimeUnit.SECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(3, TimeUnit.SECONDS);
         metricRegistry.timer(ARBITRARY_TIMER_NAME).update(30, TimeUnit.SECONDS);
-        reporterBuilder.withStatisticSet().convertDurationsTo(TimeUnit.MICROSECONDS).withMeterUnitSentToCW(Microseconds).build().report();
+        reporterBuilder.withStatisticSet().convertDurationsTo(TimeUnit.MICROSECONDS).build().report();
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
