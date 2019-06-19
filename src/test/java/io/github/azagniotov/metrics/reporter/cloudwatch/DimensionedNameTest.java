@@ -9,7 +9,7 @@ import org.junit.Test;
 public class DimensionedNameTest {
   @Test
   public void canDecodeDimensionedString() {
-    final String dimensioned = "test[key1=val1,key2=val2,key3=val3]";
+    final String dimensioned = "test[key1:val1,key2:val2,key3:val3]";
 
     final DimensionedName dimensionedName = DimensionedName.decode(dimensioned);
 
@@ -30,6 +30,6 @@ public class DimensionedNameTest {
         .addDimension(new Dimension().withName("key3").withValue("val3"))
         .build();
 
-    assertEquals("test[key1=val1,key2=val2,key3=val3]", dimensionedName.encode());
+    assertEquals("test[key1:val1,key2:val2,key3:val3]", dimensionedName.encode());
   }
 }
