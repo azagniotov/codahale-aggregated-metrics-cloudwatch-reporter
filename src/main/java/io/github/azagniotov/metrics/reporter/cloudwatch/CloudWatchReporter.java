@@ -27,6 +27,7 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import io.github.azagniotov.metrics.reporter.utils.CollectionsUtils;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -340,13 +341,16 @@ public class CloudWatchReporter extends ScheduledReporter {
                                   final List<MetricDatum> metricData) {
         // Only submit metrics that show some data, so let's save some money
         if (metricConfigured && (builder.withZeroValuesSubmission || metricValue > 0)) {
+            final DimensionedName dimensionedName = DimensionedName.decode(metricName);
+
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
+            dimensions.addAll(dimensionedName.getDimensions());
 
             metricData.add(new MetricDatum()
                     .withTimestamp(new Date(builder.clock.getTime()))
                     .withValue(cleanMetricValue(metricValue))
-                    .withMetricName(metricName)
+                    .withMetricName(dimensionedName.getName())
                     .withDimensions(dimensions)
                     .withStorageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
                     .withUnit(standardUnit));
@@ -359,6 +363,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                                                        final StandardUnit standardUnit,
                                                        final List<MetricDatum> metricData) {
         if (metricConfigured) {
+            final DimensionedName dimensionedName = DimensionedName.decode(metricName);
             double scaledSum = convertDuration(LongStream.of(snapshot.getValues()).sum());
             final StatisticSet statisticSet = new StatisticSet()
                     .withSum(scaledSum)
@@ -368,12 +373,14 @@ public class CloudWatchReporter extends ScheduledReporter {
 
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_SNAPSHOT_SUMMARY));
+            dimensions.addAll(dimensionedName.getDimensions());
 
             metricData.add(new MetricDatum()
                     .withTimestamp(new Date(builder.clock.getTime()))
-                    .withMetricName(metricName)
+                    .withMetricName(dimensionedName.getName())
                     .withDimensions(dimensions)
                     .withStatisticValues(statisticSet)
+                    .withStorageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
                     .withUnit(standardUnit));
         }
     }
@@ -384,6 +391,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                                                  final StandardUnit standardUnit,
                                                  final List<MetricDatum> metricData) {
         if (metricConfigured) {
+            final DimensionedName dimensionedName = DimensionedName.decode(metricName);
             double total = LongStream.of(snapshot.getValues()).sum();
             final StatisticSet statisticSet = new StatisticSet()
                     .withSum(total)
@@ -393,12 +401,14 @@ public class CloudWatchReporter extends ScheduledReporter {
 
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
             dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_SNAPSHOT_SUMMARY));
+            dimensions.addAll(dimensionedName.getDimensions());
 
             metricData.add(new MetricDatum()
                     .withTimestamp(new Date(builder.clock.getTime()))
-                    .withMetricName(metricName)
+                    .withMetricName(dimensionedName.getName())
                     .withDimensions(dimensions)
                     .withStatisticValues(statisticSet)
+                    .withStorageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
                     .withUnit(standardUnit));
         }
     }

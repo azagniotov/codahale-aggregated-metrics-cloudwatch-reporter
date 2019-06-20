@@ -279,6 +279,23 @@ public class CloudWatchReporterTest {
     }
 
     @Test
+    public void shouldReportExpectedGlobalAndCustomDimensions() throws Exception {
+
+
+        metricRegistry.counter(DimensionedName.withName(ARBITRARY_COUNTER_NAME)
+            .withDimension("key1", "value1")
+            .withDimension("key2", "value2")
+            .build().encode()).inc();
+        reporterBuilder.withGlobalDimensions("Region=us-west-2").build().report();
+
+        final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
+
+        assertThat(dimensions).contains(new Dimension().withName("Region").withValue("us-west-2"));
+        assertThat(dimensions).contains(new Dimension().withName("key1").withValue("value1"));
+        assertThat(dimensions).contains(new Dimension().withName("key2").withValue("value2"));
+    }
+
+    @Test
     public void shouldReportExpectedMultipleGlobalDimensions() throws Exception {
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
         reporterBuilder.withGlobalDimensions("Region=us-west-2", "Instance=stage").build().report();
