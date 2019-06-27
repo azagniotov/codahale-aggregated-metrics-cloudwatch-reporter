@@ -43,7 +43,7 @@ __Please note__:
 
 - [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html)) are reported __raw__.
 - [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) values (the `percentiles`, `min`, `max`, `sum`, `arithmetic mean` & `std-dev` from [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html)) are reported after conversion by a duration factor was applied. The duration factor is calculated by converting `1` unit of `duration unit` type to `nanoseconds` (see [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html))
-- [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html) values (the `1min rate`, `5min rate`, `15min rate` & `mean rate`) are reported after conversion by a rate factor was applied. The rate factor is calculated by converting `1` unit of `rate unit` type to `seconds` (see [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html))
+- [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html) values (the `1min rate`, `5min rate`, `15min rate` & `mean rate`) are reported after conversion by a rate factor was applied. The rate factor is calculated by converting `1` unit of `rate unit` type to `seconds` (see [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html)). The Unit of the sent MetricDatum will default to that `rate unit` if not changed with `builder.withMeterUnitSentToCW()`.
 
 ### Metric Dimensions
 A dimension is a name/value pair that helps you to uniquely identify a metric. Every metric has specific characteristics that describe
@@ -178,6 +178,7 @@ The reporter provides a fine-grained configuration options through its builder t
                     .withZeroValuesSubmission()
                     .withReportRawCountValue()
                     .withHighResolution()
+                    .withMeterUnitSentToCW(StandardUnit.Bytes)
                     .withDryRun()
                     .build();
 

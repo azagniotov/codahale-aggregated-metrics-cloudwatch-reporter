@@ -32,14 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -494,6 +487,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         private MetricFilter metricFilter;
         private TimeUnit rateUnit;
         private TimeUnit durationUnit;
+        private Optional<StandardUnit> cwMeterUnit;
         private StandardUnit cwRateUnit;
         private StandardUnit cwDurationUnit;
         private Set<Dimension> globalDimensions;
@@ -509,6 +503,7 @@ public class CloudWatchReporter extends ScheduledReporter {
             this.rateUnit = TimeUnit.SECONDS;
             this.durationUnit = TimeUnit.MILLISECONDS;
             this.globalDimensions = new LinkedHashSet<>();
+            this.cwMeterUnit = Optional.empty();
             this.cwRateUnit = toStandardUnit(rateUnit);
             this.cwDurationUnit = toStandardUnit(durationUnit);
             this.clock = Clock.defaultClock();
@@ -753,6 +748,16 @@ public class CloudWatchReporter extends ScheduledReporter {
             return this;
         }
 
+        /**
+         * Send Meters in other Unit than the DurationUnit. Usefull if the metered metric does not contain timeunits
+         * @param reportUnit the Unit which is set as metadata on meter reports.
+         * @return {@code this}
+         */
+        public Builder withMeterUnitSentToCW(final StandardUnit reportUnit) {
+            this.cwMeterUnit = Optional.of(reportUnit);
+            return this;
+        }
+
         public CloudWatchReporter build() {
 
             if (withJvmMetrics) {
@@ -766,7 +771,7 @@ public class CloudWatchReporter extends ScheduledReporter {
                 metricRegistry.register("jvm.thread-states", new ThreadStatesGaugeSet());
             }
 
-            cwRateUnit = toStandardUnit(rateUnit);
+            cwRateUnit = cwMeterUnit.orElse(toStandardUnit(rateUnit));
             cwDurationUnit = toStandardUnit(durationUnit);
 
             return new CloudWatchReporter(this);
