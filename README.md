@@ -132,7 +132,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.12")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.13")
 }
 ```
 
@@ -198,6 +198,10 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+#### 1.0.13
+* PR [#23](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/23) Makes reported Unit of Meters configurable (https://github.com/tjarkoGrossmann0815)
+* PR [#24](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/24) Makes it possible to provide dimensions per metric (https://github.com/jebl01)
 
 #### 1.0.12
 * PR [#22](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/22) Provides the possibility to report metrics to AWS using high resolution (https://github.com/jebl01)
