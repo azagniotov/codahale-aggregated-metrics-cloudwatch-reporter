@@ -1,6 +1,5 @@
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClientBuilder;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -39,10 +38,10 @@ public class Main {
             this.metricRegistry = new MetricRegistry();
             this.theTimer = metricRegistry.timer("TheTimer");
 
-            final AmazonCloudWatchAsync amazonCloudWatchAsync =
-                    AmazonCloudWatchAsyncClientBuilder
-                            .standard()
-                            .withRegion(Regions.US_WEST_2)
+            final CloudWatchAsyncClient amazonCloudWatchAsync =
+                    CloudWatchAsyncClient
+                            .builder()
+                            .region(Region.US_WEST_2)
                             .build();
 
             final CloudWatchReporter cloudWatchReporter =

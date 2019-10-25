@@ -1,6 +1,6 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
-import com.amazonaws.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,7 +59,7 @@ public class DimensionedName {
         final StringBuilder sb = new StringBuilder(this.name);
         sb.append('[');
         sb.append(this.dimensions.values().stream()
-            .map(dimension -> dimension.getName() + ":" + dimension.getValue())
+            .map(dimension -> dimension.name() + ":" + dimension.value())
             .collect(Collectors.joining(",")));
         sb.append(']');
 
