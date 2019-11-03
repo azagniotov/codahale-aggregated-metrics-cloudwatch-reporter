@@ -1,6 +1,6 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
-import com.amazonaws.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +22,7 @@ public class DimensionedNameBuilder {
   }
 
   public DimensionedNameBuilder withDimension(final String name, final String value) {
-    this.dimensions.put(name, new Dimension().withName(name).withValue(value));
+    this.dimensions.put(name, Dimension.builder().name(name).value(value).build());
     return this;
   }
 }

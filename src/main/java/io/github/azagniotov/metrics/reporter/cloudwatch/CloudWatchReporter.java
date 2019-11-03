@@ -1,13 +1,14 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync;
-import com.amazonaws.services.cloudwatch.model.Dimension;
-import com.amazonaws.services.cloudwatch.model.InvalidParameterValueException;
-import com.amazonaws.services.cloudwatch.model.MetricDatum;
-import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
-import com.amazonaws.services.cloudwatch.model.PutMetricDataResult;
-import com.amazonaws.services.cloudwatch.model.StandardUnit;
-import com.amazonaws.services.cloudwatch.model.StatisticSet;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
+import software.amazon.awssdk.services.cloudwatch.model.StatisticSet;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.InvalidParameterValueException;
+
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Counting;
@@ -27,7 +28,8 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import io.github.azagniotov.metrics.reporter.utils.CollectionsUtils;
-import java.util.Arrays;
+
+import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +102,7 @@ public class CloudWatchReporter extends ScheduledReporter {
 
     private final Builder builder;
     private final String namespace;
-    private final AmazonCloudWatchAsync cloudWatchAsyncClient;
+    private final CloudWatchAsyncClient cloudWatchAsyncClient;
     private final StandardUnit rateUnit;
     private final StandardUnit durationUnit;
     private final boolean highResolution;
@@ -156,23 +158,25 @@ public class CloudWatchReporter extends ScheduledReporter {
             }
 
             final Collection<List<MetricDatum>> metricDataPartitions = CollectionsUtils.partition(metricData, MAXIMUM_DATUMS_PER_REQUEST);
-            final List<Future<PutMetricDataResult>> cloudWatchFutures = new ArrayList<>(metricData.size());
+            final List<Future<PutMetricDataResponse>> cloudWatchFutures = new ArrayList<>(metricData.size());
 
             for (final List<MetricDatum> partition : metricDataPartitions) {
-                final PutMetricDataRequest putMetricDataRequest = new PutMetricDataRequest()
-                        .withNamespace(namespace)
-                        .withMetricData(partition);
+                final PutMetricDataRequest putMetricDataRequest = PutMetricDataRequest
+                        .builder()
+                        .namespace(namespace)
+                        .metricData(partition)
+                        .build();
 
                 if (builder.withDryRun) {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Dry run - constructed PutMetricDataRequest: {}", putMetricDataRequest);
                     }
                 } else {
-                    cloudWatchFutures.add(cloudWatchAsyncClient.putMetricDataAsync(putMetricDataRequest));
+                    cloudWatchFutures.add(cloudWatchAsyncClient.putMetricData(putMetricDataRequest));
                 }
             }
 
-            for (final Future<PutMetricDataResult> cloudWatchFuture : cloudWatchFutures) {
+            for (final Future<PutMetricDataResponse> cloudWatchFuture : cloudWatchFutures) {
                 try {
                     cloudWatchFuture.get();
                 } catch (final Exception e) {
@@ -199,7 +203,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         } finally {
             if (!builder.withDryRun) {
                 try {
-                    cloudWatchAsyncClient.shutdown();
+                    cloudWatchAsyncClient.close();
                 } catch (final Exception e) {
                     LOGGER.error("Error shutting down AmazonCloudWatchAsync", cloudWatchAsyncClient, e);
                 }
@@ -210,7 +214,7 @@ public class CloudWatchReporter extends ScheduledReporter {
     private void processGauge(final String metricName, final Gauge gauge, final List<MetricDatum> metricData) {
         if (gauge.getValue() instanceof Number) {
             final Number number = (Number) gauge.getValue();
-            stageMetricDatum(true, metricName, number.doubleValue(), StandardUnit.None, DIMENSION_GAUGE, metricData);
+            stageMetricDatum(true, metricName, number.doubleValue(), StandardUnit.NONE, DIMENSION_GAUGE, metricData);
         }
     }
 
@@ -231,7 +235,7 @@ public class CloudWatchReporter extends ScheduledReporter {
             reportValue = currentCount - lastCount;
         }
 
-        stageMetricDatum(true, metricName, reportValue, StandardUnit.Count, DIMENSION_COUNT, metricData);
+        stageMetricDatum(true, metricName, reportValue, StandardUnit.COUNT, DIMENSION_COUNT, metricData);
     }
 
     /**
@@ -305,15 +309,15 @@ public class CloudWatchReporter extends ScheduledReporter {
         if (builder.withZeroValuesSubmission || snapshot.size() > 0) {
             for (final Percentile percentile : builder.percentiles) {
                 final double value = snapshot.getValue(percentile.getQuantile());
-                stageMetricDatum(true, metricName, value, StandardUnit.None, percentile.getDesc(), metricData);
+                stageMetricDatum(true, metricName, value, StandardUnit.NONE, percentile.getDesc(), metricData);
             }
         }
 
         // prevent empty snapshot from causing InvalidParameterValueException
         if (snapshot.size() > 0) {
-            stageMetricDatum(builder.withArithmeticMean, metricName, snapshot.getMean(), StandardUnit.None, DIMENSION_SNAPSHOT_MEAN, metricData);
-            stageMetricDatum(builder.withStdDev, metricName, snapshot.getStdDev(), StandardUnit.None, DIMENSION_SNAPSHOT_STD_DEV, metricData);
-            stageMetricDatumWithRawSnapshot(builder.withStatisticSet, metricName, snapshot, StandardUnit.None, metricData);
+            stageMetricDatum(builder.withArithmeticMean, metricName, snapshot.getMean(), StandardUnit.NONE, DIMENSION_SNAPSHOT_MEAN, metricData);
+            stageMetricDatum(builder.withStdDev, metricName, snapshot.getStdDev(), StandardUnit.NONE, DIMENSION_SNAPSHOT_STD_DEV, metricData);
+            stageMetricDatumWithRawSnapshot(builder.withStatisticSet, metricName, snapshot, StandardUnit.NONE, metricData);
         }
     }
 
@@ -337,16 +341,17 @@ public class CloudWatchReporter extends ScheduledReporter {
             final DimensionedName dimensionedName = DimensionedName.decode(metricName);
 
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
-            dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue));
+            dimensions.add(Dimension.builder().name(DIMENSION_NAME_TYPE).value(dimensionValue).build());
             dimensions.addAll(dimensionedName.getDimensions());
 
-            metricData.add(new MetricDatum()
-                    .withTimestamp(new Date(builder.clock.getTime()))
-                    .withValue(cleanMetricValue(metricValue))
-                    .withMetricName(dimensionedName.getName())
-                    .withDimensions(dimensions)
-                    .withStorageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
-                    .withUnit(standardUnit));
+            metricData.add(MetricDatum.builder()
+                    .timestamp(Instant.ofEpochMilli(builder.clock.getTime()))
+                    .value(cleanMetricValue(metricValue))
+                    .metricName(dimensionedName.getName())
+                    .dimensions(dimensions)
+                    .storageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
+                    .unit(standardUnit)
+                    .build());
         }
     }
 
@@ -358,23 +363,26 @@ public class CloudWatchReporter extends ScheduledReporter {
         if (metricConfigured) {
             final DimensionedName dimensionedName = DimensionedName.decode(metricName);
             double scaledSum = convertDuration(LongStream.of(snapshot.getValues()).sum());
-            final StatisticSet statisticSet = new StatisticSet()
-                    .withSum(scaledSum)
-                    .withSampleCount((double) snapshot.size())
-                    .withMinimum(convertDuration(snapshot.getMin()))
-                    .withMaximum(convertDuration(snapshot.getMax()));
+            final StatisticSet statisticSet = StatisticSet.builder()
+                    .sum(scaledSum)
+                    .sampleCount((double) snapshot.size())
+                    .minimum(convertDuration(snapshot.getMin()))
+                    .maximum(convertDuration(snapshot.getMax()))
+                    .build();
 
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
-            dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_SNAPSHOT_SUMMARY));
+            dimensions.add(Dimension.builder().name(DIMENSION_NAME_TYPE).value(DIMENSION_SNAPSHOT_SUMMARY).build());
             dimensions.addAll(dimensionedName.getDimensions());
 
-            metricData.add(new MetricDatum()
-                    .withTimestamp(new Date(builder.clock.getTime()))
-                    .withMetricName(dimensionedName.getName())
-                    .withDimensions(dimensions)
-                    .withStatisticValues(statisticSet)
-                    .withStorageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
-                    .withUnit(standardUnit));
+            metricData.add(MetricDatum
+                    .builder()
+                    .timestamp(Instant.ofEpochMilli(builder.clock.getTime()))
+                    .metricName(dimensionedName.getName())
+                    .dimensions(dimensions)
+                    .statisticValues(statisticSet)
+                    .storageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
+                    .unit(standardUnit)
+                    .build());
         }
     }
 
@@ -386,23 +394,27 @@ public class CloudWatchReporter extends ScheduledReporter {
         if (metricConfigured) {
             final DimensionedName dimensionedName = DimensionedName.decode(metricName);
             double total = LongStream.of(snapshot.getValues()).sum();
-            final StatisticSet statisticSet = new StatisticSet()
-                    .withSum(total)
-                    .withSampleCount((double) snapshot.size())
-                    .withMinimum((double) snapshot.getMin())
-                    .withMaximum((double) snapshot.getMax());
+            final StatisticSet statisticSet =StatisticSet
+                    .builder()
+                    .sum(total)
+                    .sampleCount((double) snapshot.size())
+                    .minimum((double) snapshot.getMin())
+                    .maximum((double) snapshot.getMax())
+                    .build();
 
             final Set<Dimension> dimensions = new LinkedHashSet<>(builder.globalDimensions);
-            dimensions.add(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_SNAPSHOT_SUMMARY));
+            dimensions.add(Dimension.builder().name(DIMENSION_NAME_TYPE).value(DIMENSION_SNAPSHOT_SUMMARY).build());
             dimensions.addAll(dimensionedName.getDimensions());
 
-            metricData.add(new MetricDatum()
-                    .withTimestamp(new Date(builder.clock.getTime()))
-                    .withMetricName(dimensionedName.getName())
-                    .withDimensions(dimensions)
-                    .withStatisticValues(statisticSet)
-                    .withStorageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
-                    .withUnit(standardUnit));
+            metricData.add(MetricDatum
+                    .builder()
+                    .timestamp(Instant.ofEpochMilli(builder.clock.getTime()))
+                    .metricName(dimensionedName.getName())
+                    .dimensions(dimensions)
+                    .statisticValues(statisticSet)
+                    .storageResolution(highResolution ? HIGH_RESOLUTION : STANDARD_RESOLUTION)
+                    .unit(standardUnit)
+                    .build());
         }
     }
 
@@ -432,11 +444,11 @@ public class CloudWatchReporter extends ScheduledReporter {
      * using the given CloudWatch client.
      *
      * @param metricRegistry {@link MetricRegistry} instance
-     * @param client         {@link AmazonCloudWatchAsync} instance
+     * @param client         {@link CloudWatchAsyncClient} instance
      * @param namespace      the namespace. Must be non-null and not empty.
      * @return {@link Builder} instance
      */
-    public static Builder forRegistry(final MetricRegistry metricRegistry, final AmazonCloudWatchAsync client, final String namespace) {
+    public static Builder forRegistry(final MetricRegistry metricRegistry, final CloudWatchAsyncClient client, final String namespace) {
         return new Builder(metricRegistry, client, namespace);
     }
 
@@ -469,7 +481,7 @@ public class CloudWatchReporter extends ScheduledReporter {
     public static class Builder {
 
         private final String namespace;
-        private final AmazonCloudWatchAsync cloudWatchAsyncClient;
+        private final CloudWatchAsyncClient cloudWatchAsyncClient;
         private final MetricRegistry metricRegistry;
 
         private Percentile[] percentiles;
@@ -494,7 +506,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         private final Clock clock;
         private boolean highResolution;
 
-        private Builder(final MetricRegistry metricRegistry, final AmazonCloudWatchAsync cloudWatchAsyncClient, final String namespace) {
+        private Builder(final MetricRegistry metricRegistry, final CloudWatchAsyncClient cloudWatchAsyncClient, final String namespace) {
             this.metricRegistry = metricRegistry;
             this.cloudWatchAsyncClient = cloudWatchAsyncClient;
             this.namespace = namespace;
@@ -738,7 +750,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         public Builder withGlobalDimensions(final String... dimensions) {
             for (final String pair : dimensions) {
                 final List<String> splitted = Stream.of(pair.split("=")).map(String::trim).collect(Collectors.toList());
-                this.globalDimensions.add(new Dimension().withName(splitted.get(0)).withValue(splitted.get(1)));
+                this.globalDimensions.add(Dimension.builder().name(splitted.get(0)).value(splitted.get(1)).build());
             }
             return this;
         }
@@ -780,11 +792,11 @@ public class CloudWatchReporter extends ScheduledReporter {
         private StandardUnit toStandardUnit(final TimeUnit timeUnit) {
             switch (timeUnit) {
                 case SECONDS:
-                    return StandardUnit.Seconds;
+                    return StandardUnit.SECONDS;
                 case MILLISECONDS:
-                    return StandardUnit.Milliseconds;
+                    return StandardUnit.MILLISECONDS;
                 case MICROSECONDS:
-                    return StandardUnit.Microseconds;
+                    return StandardUnit.MICROSECONDS;
                 default:
                     throw new IllegalArgumentException("Unsupported TimeUnit: " + timeUnit);
             }

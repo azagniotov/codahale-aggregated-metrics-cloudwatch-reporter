@@ -1,11 +1,12 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
-import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsyncClient;
-import com.amazonaws.services.cloudwatch.model.Dimension;
-import com.amazonaws.services.cloudwatch.model.MetricDatum;
-import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest;
-import com.amazonaws.services.cloudwatch.model.PutMetricDataResult;
-import com.amazonaws.services.cloudwatch.model.StandardUnit;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
+
 import com.codahale.metrics.EWMA;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -26,14 +27,10 @@ import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.amazonaws.services.cloudwatch.model.StandardUnit.Count;
-import static com.amazonaws.services.cloudwatch.model.StandardUnit.Microseconds;
-import static com.amazonaws.services.cloudwatch.model.StandardUnit.Milliseconds;
-import static com.amazonaws.services.cloudwatch.model.StandardUnit.None;
 import static com.google.common.truth.Truth.assertThat;
 import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_COUNT;
 import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_GAUGE;
@@ -58,10 +55,10 @@ public class CloudWatchReporterTest {
     private static final String ARBITRARY_GAUGE_NAME = "TheGauge";
 
     @Mock
-    private AmazonCloudWatchAsyncClient mockAmazonCloudWatchAsyncClient;
+    private CloudWatchAsyncClient mockAmazonCloudWatchAsyncClient;
 
     @Mock
-    private Future<PutMetricDataResult> mockPutMetricDataResultFuture;
+    private CompletableFuture<PutMetricDataResponse> mockPutMetricDataResultFuture;
 
     @Captor
     private ArgumentCaptor<PutMetricDataRequest> metricDataRequestCaptor;
@@ -78,7 +75,7 @@ public class CloudWatchReporterTest {
     public void setUp() throws Exception {
         metricRegistry = new MetricRegistry();
         reporterBuilder = CloudWatchReporter.forRegistry(metricRegistry, mockAmazonCloudWatchAsyncClient, NAMESPACE);
-        when(mockAmazonCloudWatchAsyncClient.putMetricDataAsync(metricDataRequestCaptor.capture())).thenReturn(mockPutMetricDataResultFuture);
+        when(mockAmazonCloudWatchAsyncClient.putMetricData(metricDataRequestCaptor.capture())).thenReturn(mockPutMetricDataResultFuture);
     }
 
     @Test
@@ -86,7 +83,7 @@ public class CloudWatchReporterTest {
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
         reporterBuilder.withDryRun().build().report();
 
-        verify(mockAmazonCloudWatchAsyncClient, never()).putMetricDataAsync(any(PutMetricDataRequest.class));
+        verify(mockAmazonCloudWatchAsyncClient, never()).putMetricData(any(PutMetricDataRequest.class));
     }
 
     @Test
@@ -96,7 +93,7 @@ public class CloudWatchReporterTest {
 
         final MetricDatum firstMetricDatum = firstMetricDatumFromCapturedRequest();
         
-        assertThat(firstMetricDatum.getStorageResolution()).isEqualTo(60);
+        assertThat(firstMetricDatum.storageResolution()).isEqualTo(60);
     }
 
     @Test
@@ -106,7 +103,7 @@ public class CloudWatchReporterTest {
 
         final MetricDatum firstMetricDatum = firstMetricDatumFromCapturedRequest();
 
-        assertThat(firstMetricDatum.getStorageResolution()).isEqualTo(1);
+        assertThat(firstMetricDatum.storageResolution()).isEqualTo(1);
     }
 
     @Test
@@ -117,7 +114,7 @@ public class CloudWatchReporterTest {
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
         assertThat(dimensions).hasSize(1);
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_COUNT));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value(DIMENSION_COUNT).build());
     }
 
     @Test
@@ -127,7 +124,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_COUNT));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value(DIMENSION_COUNT).build());
     }
 
     @Test
@@ -137,7 +134,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_GAUGE));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value(DIMENSION_GAUGE).build());
     }
 
     @Test
@@ -145,7 +142,7 @@ public class CloudWatchReporterTest {
         metricRegistry.register(ARBITRARY_GAUGE_NAME, (Gauge<String>) () -> "bad value type");
         reporterBuilder.build().report();
 
-        verify(mockAmazonCloudWatchAsyncClient, never()).putMetricDataAsync(any(PutMetricDataRequest.class));
+        verify(mockAmazonCloudWatchAsyncClient, never()).putMetricData(any(PutMetricDataRequest.class));
     }
 
     @Test
@@ -161,7 +158,7 @@ public class CloudWatchReporterTest {
                 .withFifteenMinuteMeanRate()
                 .withMeanRate());
 
-        verify(mockAmazonCloudWatchAsyncClient, never()).putMetricDataAsync(any(PutMetricDataRequest.class));
+        verify(mockAmazonCloudWatchAsyncClient, never()).putMetricData(any(PutMetricDataRequest.class));
     }
 
     @Test
@@ -179,12 +176,12 @@ public class CloudWatchReporterTest {
                 .withZeroValuesSubmission()
                 .withMeanRate());
 
-        verify(mockAmazonCloudWatchAsyncClient, times(1)).putMetricDataAsync(metricDataRequestCaptor.capture());
+        verify(mockAmazonCloudWatchAsyncClient, times(1)).putMetricData(metricDataRequestCaptor.capture());
 
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
-        final List<MetricDatum> metricData = putMetricDataRequest.getMetricData();
+        final List<MetricDatum> metricData = putMetricDataRequest.metricData();
         for (final MetricDatum metricDatum : metricData) {
-            assertThat(metricDatum.getValue()).isEqualTo(0.0);
+            assertThat(metricDatum.value()).isEqualTo(0.0);
         }
     }
 
@@ -195,7 +192,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("1-min-mean-rate [per-second]"));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value("1-min-mean-rate [per-second]").build());
     }
 
     @Test
@@ -205,7 +202,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("5-min-mean-rate [per-second]"));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value("5-min-mean-rate [per-second]").build());
     }
 
     @Test
@@ -215,7 +212,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("15-min-mean-rate [per-second]"));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value("15-min-mean-rate [per-second]").build());
     }
 
     @Test
@@ -225,22 +222,22 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("mean-rate [per-second]"));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value("mean-rate [per-second]").build());
     }
 
     @Test
     public void reportedMeterShouldHaveChangedUnit() throws Exception {
         metricRegistry.meter(ARBITRARY_METER_NAME).mark(1);
-        CloudWatchReporter.Builder builder = reporterBuilder.withMeanRate().withMeterUnitSentToCW(StandardUnit.Terabytes);
+        CloudWatchReporter.Builder builder = reporterBuilder.withMeanRate().withMeterUnitSentToCW(StandardUnit.TERABYTES);
         CloudWatchReporter cloudWatchReporter = builder.build();
         cloudWatchReporter.report();
 
         final List<MetricDatum> metricData = allMetricDataFromCapturedRequests();
 
-        List<MetricDatum> filtered = metricData.stream().filter(x -> !x.getUnit().equals(Count.toString())).collect(Collectors.toList());
+        List<MetricDatum> filtered = metricData.stream().filter(x -> !x.unit().equals(StandardUnit.COUNT)).collect(Collectors.toList());
 
         assertThat(filtered.size()).isEqualTo(1);
-        assertThat(filtered.get(0).getUnit()).isEqualTo(StandardUnit.Terabytes.toString());
+        assertThat(filtered.get(0).unit()).isEqualTo(StandardUnit.TERABYTES);
     }
 
     @Test
@@ -250,7 +247,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_SNAPSHOT_MEAN));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value(DIMENSION_SNAPSHOT_MEAN).build());
     }
 
     @Test
@@ -261,7 +258,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(DIMENSION_SNAPSHOT_STD_DEV));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value(DIMENSION_SNAPSHOT_STD_DEV).build());
     }
 
     @Test
@@ -271,7 +268,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("snapshot-mean [in-milliseconds]"));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value("snapshot-mean [in-milliseconds]").build());
     }
 
     @Test
@@ -282,7 +279,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = allDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue("snapshot-std-dev [in-milliseconds]"));
+        assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value("snapshot-std-dev [in-milliseconds]").build());
     }
 
     @Test
@@ -292,7 +289,7 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName("Region").withValue("us-west-2"));
+        assertThat(dimensions).contains(Dimension.builder().name("Region").value("us-west-2").build());
     }
 
     @Test
@@ -307,9 +304,9 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName("Region").withValue("us-west-2"));
-        assertThat(dimensions).contains(new Dimension().withName("key1").withValue("value1"));
-        assertThat(dimensions).contains(new Dimension().withName("key2").withValue("value2"));
+        assertThat(dimensions).contains(Dimension.builder().name("Region").value("us-west-2").build());
+        assertThat(dimensions).contains(Dimension.builder().name("key1").value("value1").build());
+        assertThat(dimensions).contains(Dimension.builder().name("key2").value("value2").build());
     }
 
     @Test
@@ -319,8 +316,8 @@ public class CloudWatchReporterTest {
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
-        assertThat(dimensions).contains(new Dimension().withName("Region").withValue("us-west-2"));
-        assertThat(dimensions).contains(new Dimension().withName("Instance").withValue("stage"));
+        assertThat(dimensions).contains(Dimension.builder().name("Region").value("us-west-2").build());
+        assertThat(dimensions).contains(Dimension.builder().name("Instance").value("stage").build());
     }
 
     @Test
@@ -340,8 +337,8 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricDatum = firstMetricDatumFromCapturedRequest();
 
-        assertThat(metricDatum.getValue()).isWithin(1.0);
-        assertThat(metricDatum.getUnit()).isEqualTo(Count.toString());
+        assertThat(metricDatum.value()).isWithin(1.0);
+        assertThat(metricDatum.unit()).isEqualTo(StandardUnit.COUNT);
     }
 
     @Test
@@ -351,12 +348,12 @@ public class CloudWatchReporterTest {
 
         cloudWatchReporter.report();
         MetricDatum metricDatum = firstMetricDatumFromCapturedRequest();
-        assertThat(metricDatum.getValue().intValue()).isEqualTo(1);
+        assertThat(metricDatum.value().intValue()).isEqualTo(1);
         metricDataRequestCaptor.getAllValues().clear();
 
         cloudWatchReporter.report();
 
-        verify(mockAmazonCloudWatchAsyncClient, times(1)).putMetricDataAsync(any(PutMetricDataRequest.class));
+        verify(mockAmazonCloudWatchAsyncClient, times(1)).putMetricData(any(PutMetricDataRequest.class));
     }
 
     @Test
@@ -367,7 +364,7 @@ public class CloudWatchReporterTest {
 
         cloudWatchReporter.report();
         MetricDatum metricDatum = firstMetricDatumFromCapturedRequest();
-        assertThat(metricDatum.getValue().intValue()).isEqualTo(2);
+        assertThat(metricDatum.value().intValue()).isEqualTo(2);
         metricDataRequestCaptor.getAllValues().clear();
 
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
@@ -379,9 +376,9 @@ public class CloudWatchReporterTest {
 
         cloudWatchReporter.report();
         metricDatum = firstMetricDatumFromCapturedRequest();
-        assertThat(metricDatum.getValue().intValue()).isEqualTo(6);
+        assertThat(metricDatum.value().intValue()).isEqualTo(6);
 
-        verify(mockAmazonCloudWatchAsyncClient, times(2)).putMetricDataAsync(any(PutMetricDataRequest.class));
+        verify(mockAmazonCloudWatchAsyncClient, times(2)).putMetricData(any(PutMetricDataRequest.class));
     }
 
     @Test
@@ -391,8 +388,8 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-mean [in-milliseconds]");
 
-        assertThat(metricData.getValue().intValue()).isEqualTo(1);
-        assertThat(metricData.getUnit()).isEqualTo(Milliseconds.toString());
+        assertThat(metricData.value().intValue()).isEqualTo(1);
+        assertThat(metricData.unit()).isEqualTo(StandardUnit.MILLISECONDS);
     }
 
     @Test
@@ -405,8 +402,8 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest("snapshot-std-dev [in-milliseconds]");
 
-        assertThat(metricData.getValue().intValue()).isEqualTo(12);
-        assertThat(metricData.getUnit()).isEqualTo(Milliseconds.toString());
+        assertThat(metricData.value().intValue()).isEqualTo(12);
+        assertThat(metricData.unit()).isEqualTo(StandardUnit.MILLISECONDS);
     }
 
     @Test
@@ -419,11 +416,11 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
-        assertThat(metricData.getStatisticValues().getSum().intValue()).isEqualTo(36_000_000);
-        assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30_000_000);
-        assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1_000_000);
-        assertThat(metricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(4);
-        assertThat(metricData.getUnit()).isEqualTo(Microseconds.toString());
+        assertThat(metricData.statisticValues().sum().intValue()).isEqualTo(36_000_000);
+        assertThat(metricData.statisticValues().maximum().intValue()).isEqualTo(30_000_000);
+        assertThat(metricData.statisticValues().minimum().intValue()).isEqualTo(1_000_000);
+        assertThat(metricData.statisticValues().sampleCount().intValue()).isEqualTo(4);
+        assertThat(metricData.unit()).isEqualTo(StandardUnit.MICROSECONDS);
     }
 
     @Test
@@ -433,8 +430,8 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_MEAN);
 
-        assertThat(metricData.getValue().intValue()).isEqualTo(1);
-        assertThat(metricData.getUnit()).isEqualTo(None.toString());
+        assertThat(metricData.value().intValue()).isEqualTo(1);
+        assertThat(metricData.unit()).isEqualTo(StandardUnit.NONE);
     }
 
     @Test
@@ -447,8 +444,8 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_STD_DEV);
 
-        assertThat(metricData.getValue().intValue()).isEqualTo(12);
-        assertThat(metricData.getUnit()).isEqualTo(None.toString());
+        assertThat(metricData.value().intValue()).isEqualTo(12);
+        assertThat(metricData.unit()).isEqualTo(StandardUnit.NONE);
     }
 
     @Test
@@ -461,11 +458,11 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
-        assertThat(metricData.getStatisticValues().getSum().intValue()).isEqualTo(36);
-        assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30);
-        assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1);
-        assertThat(metricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(4);
-        assertThat(metricData.getUnit()).isEqualTo(None.toString());
+        assertThat(metricData.statisticValues().sum().intValue()).isEqualTo(36);
+        assertThat(metricData.statisticValues().maximum().intValue()).isEqualTo(30);
+        assertThat(metricData.statisticValues().minimum().intValue()).isEqualTo(1);
+        assertThat(metricData.statisticValues().sampleCount().intValue()).isEqualTo(4);
+        assertThat(metricData.unit()).isEqualTo(StandardUnit.NONE);
     }
 
     @Test
@@ -482,11 +479,11 @@ public class CloudWatchReporterTest {
 
         final MetricDatum metricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
-        assertThat(metricData.getStatisticValues().getMaximum().intValue()).isEqualTo(30);
-        assertThat(metricData.getStatisticValues().getMinimum().intValue()).isEqualTo(1);
-        assertThat(metricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(3);
-        assertThat(metricData.getStatisticValues().getSum().intValue()).isEqualTo(33);
-        assertThat(metricData.getUnit()).isEqualTo(None.toString());
+        assertThat(metricData.statisticValues().maximum().intValue()).isEqualTo(30);
+        assertThat(metricData.statisticValues().minimum().intValue()).isEqualTo(1);
+        assertThat(metricData.statisticValues().sampleCount().intValue()).isEqualTo(3);
+        assertThat(metricData.statisticValues().sum().intValue()).isEqualTo(33);
+        assertThat(metricData.unit()).isEqualTo(StandardUnit.NONE);
 
         slidingWindowHistogram.update(4);
         slidingWindowHistogram.update(100);
@@ -496,11 +493,11 @@ public class CloudWatchReporterTest {
 
         final MetricDatum secondMetricData = metricDatumByDimensionFromCapturedRequest(DIMENSION_SNAPSHOT_SUMMARY);
 
-        assertThat(secondMetricData.getStatisticValues().getMaximum().intValue()).isEqualTo(100);
-        assertThat(secondMetricData.getStatisticValues().getMinimum().intValue()).isEqualTo(4);
-        assertThat(secondMetricData.getStatisticValues().getSampleCount().intValue()).isEqualTo(4);
-        assertThat(secondMetricData.getStatisticValues().getSum().intValue()).isEqualTo(115);
-        assertThat(secondMetricData.getUnit()).isEqualTo(None.toString());
+        assertThat(secondMetricData.statisticValues().maximum().intValue()).isEqualTo(100);
+        assertThat(secondMetricData.statisticValues().minimum().intValue()).isEqualTo(4);
+        assertThat(secondMetricData.statisticValues().sampleCount().intValue()).isEqualTo(4);
+        assertThat(secondMetricData.statisticValues().sum().intValue()).isEqualTo(115);
+        assertThat(secondMetricData.unit()).isEqualTo(StandardUnit.NONE);
     }
 
     @Test
@@ -511,7 +508,7 @@ public class CloudWatchReporterTest {
 
         cloudWatchReporter.report();
         MetricDatum metricDatum = firstMetricDatumFromCapturedRequest();
-        assertThat(metricDatum.getValue().intValue()).isEqualTo(2);
+        assertThat(metricDatum.value().intValue()).isEqualTo(2);
         metricDataRequestCaptor.getAllValues().clear();
 
         metricRegistry.counter(ARBITRARY_COUNTER_NAME).inc();
@@ -523,20 +520,20 @@ public class CloudWatchReporterTest {
 
         cloudWatchReporter.report();
         metricDatum = firstMetricDatumFromCapturedRequest();
-        assertThat(metricDatum.getValue().intValue()).isEqualTo(8);
+        assertThat(metricDatum.value().intValue()).isEqualTo(8);
 
-        verify(mockAmazonCloudWatchAsyncClient, times(2)).putMetricDataAsync(any(PutMetricDataRequest.class));
+        verify(mockAmazonCloudWatchAsyncClient, times(2)).putMetricData(any(PutMetricDataRequest.class));
     }
 
     private MetricDatum metricDatumByDimensionFromCapturedRequest(final String dimensionValue) {
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
-        final List<MetricDatum> metricData = putMetricDataRequest.getMetricData();
+        final List<MetricDatum> metricData = putMetricDataRequest.metricData();
 
         final Optional<MetricDatum> metricDatumOptional =
                 metricData
                         .stream()
-                        .filter(metricDatum -> metricDatum.getDimensions()
-                                .contains(new Dimension().withName(DIMENSION_NAME_TYPE).withValue(dimensionValue)))
+                        .filter(metricDatum -> metricDatum.dimensions()
+                                .contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value(dimensionValue).build()))
                         .findFirst();
 
         if (metricDatumOptional.isPresent()) {
@@ -548,26 +545,26 @@ public class CloudWatchReporterTest {
 
     private MetricDatum firstMetricDatumFromCapturedRequest() {
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
-        return putMetricDataRequest.getMetricData().get(0);
+        return putMetricDataRequest.metricData().get(0);
     }
 
     private List<MetricDatum> allMetricDataFromCapturedRequests() {
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
-        return putMetricDataRequest.getMetricData();
+        return putMetricDataRequest.metricData();
     }
 
     private List<Dimension> firstMetricDatumDimensionsFromCapturedRequest() {
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
-        final MetricDatum metricDatum = putMetricDataRequest.getMetricData().get(0);
-        return metricDatum.getDimensions();
+        final MetricDatum metricDatum = putMetricDataRequest.metricData().get(0);
+        return metricDatum.dimensions();
     }
 
     private List<Dimension> allDimensionsFromCapturedRequest() {
         final PutMetricDataRequest putMetricDataRequest = metricDataRequestCaptor.getValue();
-        final List<MetricDatum> metricData = putMetricDataRequest.getMetricData();
+        final List<MetricDatum> metricData = putMetricDataRequest.metricData();
         final List<Dimension> all = new LinkedList<>();
         for (final MetricDatum metricDatum : metricData) {
-            all.addAll(metricDatum.getDimensions());
+            all.addAll(metricDatum.dimensions());
         }
         return all;
     }

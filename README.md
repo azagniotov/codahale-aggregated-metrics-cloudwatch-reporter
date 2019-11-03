@@ -22,10 +22,10 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 
 ### Summary
 
-- This CloudWatchReporter reports the metric data to CloudWatch asynchronously using the [AmazonCloudWatchAsyncClient (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/AmazonCloudWatchAsyncClient.html) interface 
-- Each reportable value in CodeHale [Metric](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Metric.html) is reported as a separate [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html) 
+- This CloudWatchReporter reports the metric data to CloudWatch asynchronously using the [CloudWatchAsyncClient (AWS)](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/cloudwatch/CloudWatchAsyncClient.html) interface
+- Each reportable value in CodeHale [Metric](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Metric.html) is reported as a separate [MetricDatum (AWS)](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/cloudwatch/model/MetricDatum.html)
 - When reporting [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html), [Counter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Counter.html), [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) count metrics (`getCount()`) as [MetricDatum (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/MetricDatum.html), only the count difference since the last report is reported. This way the counters do not require a reset within the application using this reporter.
-- If configured, each [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) translated into [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html) in the most direct way possible.
+- If configured, each [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) translated into [StatisticSet (AWS)](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/cloudwatch/model/StatisticSet.html) in the most direct way possible.
 - If configured, JVM statistic is reported
 
 ### Reportable Metrics
@@ -37,7 +37,7 @@ Currently the only metric values that are reportable through configuration are:
 - Percentiles from [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) in [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
 - Arithmetic mean & standard deviation of [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) values in [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
 - Mean rates from [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
-- Summaries of [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) values in [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) as [StatisticSet (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/StatisticSet.html)
+- Summaries of [Snapshot](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Snapshot.html) values in [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) as [StatisticSet (AWS)](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/cloudwatch/model/StatisticSet.html)
 
 __Please note__:
 
@@ -94,13 +94,13 @@ Since `DimensionedName` is immutable, the string representation returned by `enc
 
 The Reporter uses the following defaults which can be configured:
 
-- Rate metrics are in `TimeUnit.Seconds`
-- Duration metrics are in `TimeUnit.Milliseconds`
+- Rate metrics are in `TimeUnit.SECONDS`
+- Duration metrics are in `TimeUnit.MILLISECONDS`
 - `MetricFilter.ALL` will be used for the Filter
 - `Clock.defaultClock()` will be used for the Clock (Unconfigurable)
 - Metrics are reported using standard resolution (can be changed to [high resolution](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html#high-resolution-metrics))
-- Empty global [Dimension (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/Dimension.html) list
-- The reporter adds a `Type` [Dimension (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/Dimension.html) to each reported metric, e.g:
+- Empty global [Dimension (AWS)](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/cloudwatch/model/Dimension.html) list
+- The reporter adds a `Type` [Dimension (AWS)](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/cloudwatch/model/Dimension.html) to each reported metric, e.g:
 
 | Type                                      | Metric Name                                                     |
 | ----------------------------------------- | --------------------------------------------------------------- |
@@ -117,7 +117,7 @@ The __only__ metrics that are reportable __by default__  are:
 - Count values (`getCount()`) from [Meter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Meter.html), [Counter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Counter.html), [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html) 
 - Percentile values (`75%`, `95%`, `99.9%`) from [Histogram](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Histogram.html) and [Timer](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/Timer.html)
 
-All other metrics have to be confugured for reporting by invoking their respective `withXXXX()` methods on the `CloudWatchReporter.Builder` instance
+All other metrics have to be configured for reporting by invoking their respective `withXXXX()` methods on the `CloudWatchReporter.Builder` instance
 
 
 ### Adding cloudwatch reporter to your project
@@ -143,7 +143,7 @@ The library fetches the following transitive dependencies:
 ```
     io.dropwizard.metrics:metrics-core:4.0.2
     io.dropwizard.metrics:metrics-jvm:4.0.2
-    com.amazonaws:aws-java-sdk-cloudwatch:1.11.179
+    software.amazon.awssdk:cloudwatch:2.7.19
 ```
 
 
@@ -154,12 +154,12 @@ The reporter provides a fine-grained configuration options through its builder t
 
 
 ```
-    final AmazonCloudWatchAsync amazonCloudWatchAsync =
-            AmazonCloudWatchAsyncClientBuilder
-                    .standard()
-                    .withRegion(Regions.US_WEST_2)
+    final CloudWatchAsyncClient amazonCloudWatchAsync =
+            CloudWatchAsyncClient
+                    .builder()
+                    .region(Region.US_WEST_2)
                     .build();
-    
+
     final CloudWatchReporter cloudWatchReporter =
             CloudWatchReporter.forRegistry(metricRegistry, amazonCloudWatchAsync, Main.class.getName())
                     .convertRatesTo(TimeUnit.SECONDS)
@@ -173,12 +173,12 @@ The reporter provides a fine-grained configuration options through its builder t
                     .withArithmeticMean()
                     .withStdDev()
                     .withStatisticSet()
-                    .withJvmMetrics()
-                    .withGlobalDimensions("Region=us-west-2", "Instance=stage")
                     .withZeroValuesSubmission()
                     .withReportRawCountValue()
                     .withHighResolution()
-                    .withMeterUnitSentToCW(StandardUnit.Bytes)
+                    .withMeterUnitSentToCW(StandardUnit.BYTES)
+                    .withJvmMetrics()
+                    .withGlobalDimensions("Region=us-west-2", "Instance=stage")
                     .withDryRun()
                     .build();
 
@@ -187,7 +187,7 @@ The reporter provides a fine-grained configuration options through its builder t
 
 
 #### Dry run
-The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun()` on the `Builder`. In that case, the reporter will `log.DEBUG` the created instance of [PutMetricDataRequest (AWS)](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/cloudwatch/model/PutMetricDataRequest.html), instead of doing a real `POST` to CloudWatch. 
+The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun()` on the `Builder`. In that case, the reporter will `log.DEBUG` the created instance of [PutMetricDataRequest (AWS)](https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/cloudwatch/model/PutMetricDataRequest.html), instead of doing a real `POST` to CloudWatch.
 
 
 

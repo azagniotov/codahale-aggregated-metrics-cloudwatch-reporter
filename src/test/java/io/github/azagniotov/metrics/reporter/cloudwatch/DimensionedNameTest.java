@@ -3,7 +3,7 @@ package io.github.azagniotov.metrics.reporter.cloudwatch;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.*;
 
-import com.amazonaws.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 import org.junit.Test;
 
 public class DimensionedNameTest {
@@ -17,9 +17,9 @@ public class DimensionedNameTest {
     assertEquals(3, dimensionedName.getDimensions().size());
 
     assertThat(dimensionedName.getDimensions(), hasItems(
-        new Dimension().withName("key1").withValue("val1"),
-        new Dimension().withName("key2").withValue("val2"),
-        new Dimension().withName("key3").withValue("val3")));
+        Dimension.builder().name("key1").value("val1").build(),
+        Dimension.builder().name("key2").value("val2").build(),
+        Dimension.builder().name("key3").value("val3").build()));
   }
 
   @Test
