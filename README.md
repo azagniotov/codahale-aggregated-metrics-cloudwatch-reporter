@@ -5,6 +5,7 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 ## Table of Contents
 
   - [Prerequisites](#prerequisites)
+  - [AWS Java SDK v1 and v2](#aws-java-sdk-v1-and-v2)
   - [Summary](#summary)
   - [Reportable Metrics](#reportable-metrics)
   - [Defaults](#defaults)
@@ -19,6 +20,10 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 ### Prerequisites
 
 - Java 1.8
+
+### AWS Java SDK v1 and v2
+
+The `master` branch is now on AWS Java SDK `v2.x.x`. If you want to submit pull requests for `v1.x.x`, please use `com_amazonaws_aws_cloudwatch_1.x.x` branch.
 
 ### Summary
 
@@ -132,7 +137,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:1.0.13")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:2.0.0")
 }
 ```
 
@@ -198,6 +203,9 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+#### 2.0.0
+ * PR [#26](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/26) Upgrading AWS Java SDK to v2 (https://github.com/mmccuiston)
 
 #### 1.0.13
 * PR [#23](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/23) Makes reported Unit of Meters configurable (https://github.com/tjarkoGrossmann0815)
