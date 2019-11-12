@@ -10,7 +10,6 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
   - [Reportable Metrics](#reportable-metrics)
   - [Defaults](#defaults)
   - [Adding cloudwatch reporter to your project](#adding-cloudwatch-reporter-to-your-project)
-  - [Third-party dependencies](#third-party-dependencies)
   - [Usage](#usage)
     - [Dry run](#dry-run)
   - [Credits](#credits)
@@ -140,18 +139,6 @@ dependencies {
     compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:2.0.0")
 }
 ```
-
-### Third-party dependencies
-
-The library fetches the following transitive dependencies:
-
-```
-    io.dropwizard.metrics:metrics-core:4.0.2
-    io.dropwizard.metrics:metrics-jvm:4.0.2
-    software.amazon.awssdk:cloudwatch:2.7.19
-```
-
-
 
 ### Usage
 
