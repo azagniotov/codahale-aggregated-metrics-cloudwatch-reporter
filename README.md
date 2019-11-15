@@ -136,7 +136,7 @@ repositories {
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:2.0.1")
+    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:2.0.2")
 }
 ```
 
@@ -190,6 +190,10 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+
+#### 2.0.2
+* PR [#30](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/30) Dependency upgrades (https://github.com/anilkumarmyla)
 
 #### 2.0.1
 * PR [#28](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/28) Update to cloudwatch 2.10.13 (https://github.com/anilkumarmyla)
