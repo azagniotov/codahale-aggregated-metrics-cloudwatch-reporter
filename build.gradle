@@ -36,12 +36,12 @@ allprojects {
 dependencies {
     compile("io.dropwizard.metrics:metrics-core:4.0.7")
     compile("io.dropwizard.metrics:metrics-jvm:4.0.7")
-    compile("software.amazon.awssdk:cloudwatch:2.10.31")
+    compile("software.amazon.awssdk:cloudwatch:2.10.55")
     compile("org.slf4j:slf4j-api:1.7.29")
 
-    testCompile("org.mockito:mockito-core:3.2.0")
-    testCompile("junit:junit:4.12")
-    testCompile("com.google.truth:truth:1.0")
+    testCompile("org.mockito:mockito-core:3.2.4")
+    testCompile("junit:junit:4.13")
+    testCompile("com.google.truth:truth:1.0.1")
     testCompile("org.hamcrest:hamcrest-core:2.2")
     testCompile("org.hamcrest:hamcrest-library:2.2")
 }
