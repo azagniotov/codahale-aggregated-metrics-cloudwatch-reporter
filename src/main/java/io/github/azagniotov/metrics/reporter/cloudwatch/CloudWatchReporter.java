@@ -727,9 +727,7 @@ public class CloudWatchReporter extends ScheduledReporter {
          * @return {@code this}
          */
         public Builder withPercentiles(final Percentile... percentiles) {
-            if (percentiles.length > 0) {
-                this.percentiles = percentiles;
-            }
+            this.percentiles = percentiles;
             return this;
         }
 
