@@ -40,6 +40,7 @@ import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporte
 import static io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.DIMENSION_SNAPSHOT_SUMMARY;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -125,6 +126,20 @@ public class CloudWatchReporterTest {
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
 
         assertThat(dimensions).contains(Dimension.builder().name(DIMENSION_NAME_TYPE).value(DIMENSION_COUNT).build());
+    }
+
+    @Test
+    public void reportedGaugesAreInvokedOnlyOnce() {
+        Gauge<Long> theGauge = spy(new Gauge<Long>() {
+            @Override
+            public Long getValue() {
+                return 1L;
+            }
+        });
+        metricRegistry.register(ARBITRARY_GAUGE_NAME, theGauge);
+        reporterBuilder.build().report();
+
+        verify(theGauge).getValue();
     }
 
     @Test

@@ -212,10 +212,10 @@ public class CloudWatchReporter extends ScheduledReporter {
     }
 
     private void processGauge(final String metricName, final Gauge gauge, final List<MetricDatum> metricData) {
-        if (gauge.getValue() instanceof Number) {
-            final Number number = (Number) gauge.getValue();
-            stageMetricDatum(true, metricName, number.doubleValue(), StandardUnit.NONE, DIMENSION_GAUGE, metricData);
-        }
+        Optional.ofNullable(gauge.getValue())
+            .filter(value -> value instanceof Number)
+            .map(value -> (Number) value)
+            .ifPresent(value -> stageMetricDatum(true, metricName, value.doubleValue(), StandardUnit.NONE, DIMENSION_GAUGE, metricData));
     }
 
     private void processCounter(final String metricName, final Counting counter, final List<MetricDatum> metricData) {
