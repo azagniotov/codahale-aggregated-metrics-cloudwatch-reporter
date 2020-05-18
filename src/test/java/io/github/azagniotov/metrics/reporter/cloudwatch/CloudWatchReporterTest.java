@@ -8,6 +8,7 @@ import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
 import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
 
 import com.codahale.metrics.EWMA;
+import com.codahale.metrics.ExponentialMovingAverages;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
@@ -598,11 +599,11 @@ public class CloudWatchReporterTest {
      *
      * @throws NoSuchFieldException
      * @throws IllegalAccessException
-     * @see Meter#tickIfNecessary()
+     * @see ExponentialMovingAverages#tickIfNecessary()
      * @see MetricDatum#getDimensions()
      */
     private static void reduceMeterDefaultTickInterval() throws NoSuchFieldException, IllegalAccessException {
-        setFinalStaticField(Meter.class, "TICK_INTERVAL", TimeUnit.MILLISECONDS.toNanos(1));
+        setFinalStaticField(ExponentialMovingAverages.class, "TICK_INTERVAL", TimeUnit.MILLISECONDS.toNanos(1));
     }
 
     private static void setFinalStaticField(final Class clazz, final String fieldName, long value) throws NoSuchFieldException, IllegalAccessException {
