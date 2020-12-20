@@ -1,10 +1,10 @@
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter;
 import io.github.azagniotov.metrics.reporter.cloudwatch.CloudWatchReporter.Percentile;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
