@@ -1,3 +1,6 @@
+[![CircleCI build master branch][circleci-badge]][circleci-link]
+[![Maven Central][maven-badge]][maven-link]
+
 # CodaHale Aggregated Metrics CloudWatch Reporter
 
 This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (formerly CodaHale & Yammer Metrics). The reporter is an implementation of [ScheduledReporter](https://static.javadoc.io/io.dropwizard.metrics/metrics-core/4.0.2/com/codahale/metrics/ScheduledReporter.html) from Dropwizard Metrics v4.0.2 
@@ -264,3 +267,12 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 
 ### License
 MIT
+
+<!-- references -->
+
+[circleci-badge]: https://circleci.com/gh/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter.svg?style=shield
+[circleci-link]: https://circleci.com/gh/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter
+
+[maven-badge]: https://img.shields.io/maven-central/v/io.github.azagniotov/dropwizard-metrics-cloudwatch.svg?style=flat&label=maven-central
+[maven-link]: http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.github.azagniotov%22%20AND%20a%3A%22dropwizard-metrics-cloudwatch%22
+
