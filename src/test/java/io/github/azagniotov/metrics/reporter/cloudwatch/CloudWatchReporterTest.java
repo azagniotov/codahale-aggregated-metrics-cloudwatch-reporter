@@ -1,9 +1,9 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
 import com.codahale.metrics.EWMA;
+import com.codahale.metrics.ExponentialMovingAverages;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SlidingWindowReservoir;
 import org.junit.Before;
@@ -68,7 +68,7 @@ public class CloudWatchReporterTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        reduceMeterDefaultTickInterval();
+        reduceExponentialMovingAveragesDefaultTickInterval();
     }
 
     @Before
@@ -591,17 +591,17 @@ public class CloudWatchReporterTest {
 
     /**
      * This is a very ugly way to fool the {@link EWMA} by reducing the default tick interval
-     * in {@link Meter} from {@code 5} seconds to {@code 1} millisecond in order to ensure that
+     * in {@link ExponentialMovingAverages} from {@code 5} seconds to {@code 1} millisecond in order to ensure that
      * exponentially-weighted moving average rates are populated. This helps to verify that all
      * the expected {@link Dimension}s are present in {@link MetricDatum}.
      *
      * @throws NoSuchFieldException
      * @throws IllegalAccessException
-     * @see Meter#tickIfNecessary()
+     * @see ExponentialMovingAverages#tickIfNecessary()
      * @see MetricDatum#getDimensions()
      */
-    private static void reduceMeterDefaultTickInterval() throws NoSuchFieldException, IllegalAccessException {
-        setFinalStaticField(Meter.class, "TICK_INTERVAL", TimeUnit.MILLISECONDS.toNanos(1));
+    private static void reduceExponentialMovingAveragesDefaultTickInterval() throws NoSuchFieldException, IllegalAccessException {
+        setFinalStaticField(ExponentialMovingAverages.class, "TICK_INTERVAL", TimeUnit.MILLISECONDS.toNanos(1));
     }
 
     private static void setFinalStaticField(final Class clazz, final String fieldName, long value) throws NoSuchFieldException, IllegalAccessException {
