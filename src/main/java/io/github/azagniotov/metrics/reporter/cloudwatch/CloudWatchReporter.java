@@ -1,14 +1,5 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
-import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
-import software.amazon.awssdk.services.cloudwatch.model.StatisticSet;
-import software.amazon.awssdk.services.cloudwatch.model.Dimension;
-import software.amazon.awssdk.services.cloudwatch.model.InvalidParameterValueException;
-
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Counting;
@@ -28,13 +19,27 @@ import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import io.github.azagniotov.metrics.reporter.utils.CollectionsUtils;
-
-import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.InvalidParameterValueException;
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
+import software.amazon.awssdk.services.cloudwatch.model.StatisticSet;
 
 import java.lang.management.ManagementFactory;
-import java.util.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +81,7 @@ public class CloudWatchReporter extends ScheduledReporter {
     /**
      * PutMetricData function accepts an optional StorageResolution parameter.
      * 1 = publish high-resolution metrics, 60 = publish at standard 1-minute resolution.
-    */
+     */
     private static final int HIGH_RESOLUTION = 1;
     private static final int STANDARD_RESOLUTION = 60;
 
@@ -213,9 +218,9 @@ public class CloudWatchReporter extends ScheduledReporter {
 
     private void processGauge(final String metricName, final Gauge gauge, final List<MetricDatum> metricData) {
         Optional.ofNullable(gauge.getValue())
-            .filter(value -> value instanceof Number)
-            .map(value -> (Number) value)
-            .ifPresent(value -> stageMetricDatum(true, metricName, value.doubleValue(), StandardUnit.NONE, DIMENSION_GAUGE, metricData));
+                .filter(value -> value instanceof Number)
+                .map(value -> (Number) value)
+                .ifPresent(value -> stageMetricDatum(true, metricName, value.doubleValue(), StandardUnit.NONE, DIMENSION_GAUGE, metricData));
     }
 
     private void processCounter(final String metricName, final Counting counter, final List<MetricDatum> metricData) {
@@ -394,7 +399,7 @@ public class CloudWatchReporter extends ScheduledReporter {
         if (metricConfigured) {
             final DimensionedName dimensionedName = DimensionedName.decode(metricName);
             double total = LongStream.of(snapshot.getValues()).sum();
-            final StatisticSet statisticSet =StatisticSet
+            final StatisticSet statisticSet = StatisticSet
                     .builder()
                     .sum(total)
                     .sampleCount((double) snapshot.size())
@@ -760,6 +765,7 @@ public class CloudWatchReporter extends ScheduledReporter {
 
         /**
          * Send Meters in other Unit than the DurationUnit. Usefull if the metered metric does not contain timeunits
+         *
          * @param reportUnit the Unit which is set as metadata on meter reports.
          * @return {@code this}
          */

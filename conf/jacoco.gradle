@@ -1,0 +1,28 @@
+jacoco {
+    toolVersion = "0.8.6"
+}
+
+jacocoTestCoverageVerification {
+    classDirectories.setFrom(
+            fileTree(dir: "build/classes/java/main").filter({ file ->
+                !file.name.contains('Main')
+            })
+    )
+}
+
+jacocoTestReport {
+    dependsOn test
+    executionData.from = fileTree(buildDir).include("/jacoco/*.exec")
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.enabled true
+        html.destination = file("${buildDir}/reports/jacoco/html")
+    }
+
+    classDirectories.setFrom(
+            fileTree(dir: "build/classes/java/main").filter({ file ->
+                !file.name.contains('Main')
+            })
+    )
+}

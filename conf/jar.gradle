@@ -7,11 +7,11 @@ sourceSets {
 }
 
 jar {
-    archiveName = "${artifactId}-${version}.jar"
+    archiveFileName = "${cloudReporterArtifactId}-${cloudReporterVersion}.jar"
     manifest {
-        attributes 'Package': "${groupId}",
-                'Implementation-Title': "${artifactId}",
-                'Implementation-Version': "${version}",
+        attributes 'Package': "${cloudReporterGroupId}",
+                'Implementation-Title': "${cloudReporterArtifactId}",
+                'Implementation-Version': "${cloudReporterVersion}",
                 'Implementation-Vendor': 'Alexander Zagniotov',
                 'Built-By': 'Alexander Zagniotov',
                 'Built-Date': new Date().toString(),
