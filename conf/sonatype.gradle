@@ -1,0 +1,68 @@
+// don't try to release a snapshot to a non-snapshot repository, that won't work anyway
+if (version.endsWith('-SNAPSHOT')) {
+    gradle.startParameter.excludedTaskNames += 'signMavenJavaPublication'
+    gradle.startParameter.excludedTaskNames += 'closeAndReleaseRepository'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            
+            artifactId = "${cloudReporterArtifactId}"
+
+            from components.java
+
+            pom {
+                name = 'codahale-aggregated-metrics-cloudwatch-reporter'
+                description = 'This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (formerly CodaHale & Yammer Metrics). The reporter is an implementation of ScheduledReporter from Dropwizard Metrics v3.1. Each reportable value in CodeHale Metric is reported as a separate MetricDatum'
+                url = 'https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter'
+                inceptionYear = '2016'
+                packaging = 'jar'
+
+                licenses {
+                    license {
+                        name = 'MIT'
+                        url = 'https://opensource.org/licenses/MIT'
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'azagniotov'
+                        name = 'Alexander Zagniotov'
+                        email = 'azagniotov@gmail.com'
+                    }
+                }
+
+                scm {
+                    url = 'scm:git@github.com:azagniotov/codahale-aggregated-metrics-cloudwatch-reporter.git'
+                    connection = 'scm:git@github.com:azagniotov/codahale-aggregated-metrics-cloudwatch-reporter.git'
+                    developerConnection = 'scm:git@github.com:azagniotov/codahale-aggregated-metrics-cloudwatch-reporter.git'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+            credentials {
+                username = project.findProperty('nexusUsername') ?: ''
+                password = project.findProperty('nexusPassword') ?: ''
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+// configure nexus staging plugin
+nexusStaging {
+    numberOfRetries = 50
+    delayBetweenRetriesInMillis = 5000
+}

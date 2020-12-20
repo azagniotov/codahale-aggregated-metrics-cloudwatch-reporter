@@ -1,12 +1,5 @@
 package io.github.azagniotov.metrics.reporter.cloudwatch;
 
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
-import software.amazon.awssdk.services.cloudwatch.model.Dimension;
-import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
-import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
-
 import com.codahale.metrics.EWMA;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -21,6 +14,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
+import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
+import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -93,7 +92,7 @@ public class CloudWatchReporterTest {
         reporterBuilder.build().report();
 
         final MetricDatum firstMetricDatum = firstMetricDatumFromCapturedRequest();
-        
+
         assertThat(firstMetricDatum.storageResolution()).isEqualTo(60);
     }
 
@@ -312,9 +311,9 @@ public class CloudWatchReporterTest {
 
 
         metricRegistry.counter(DimensionedName.withName(ARBITRARY_COUNTER_NAME)
-            .withDimension("key1", "value1")
-            .withDimension("key2", "value2")
-            .build().encode()).inc();
+                .withDimension("key1", "value1")
+                .withDimension("key2", "value2")
+                .build().encode()).inc();
         reporterBuilder.withGlobalDimensions("Region=us-west-2").build().report();
 
         final List<Dimension> dimensions = firstMetricDatumDimensionsFromCapturedRequest();
