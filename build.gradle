@@ -5,6 +5,7 @@ plugins {
     id "maven-publish"
     id 'signing'
     id "io.codearte.nexus-staging" version "0.21.2"  // logs into Sonatype OSS and does a "Close" and "Release". ./gradlew closeAndReleaseRepository
+    id "de.marcphilipp.nexus-publish" version "0.4.0"
     id "com.github.ben-manes.versions" version "0.28.0"
 }
 

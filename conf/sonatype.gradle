@@ -57,6 +57,12 @@ publishing {
     }
 }
 
+nexusPublishing {
+    repositories {
+        sonatype()
+    }
+}
+
 signing {
     sign publishing.publications.mavenJava
 }
@@ -66,3 +72,5 @@ nexusStaging {
     numberOfRetries = 50
     delayBetweenRetriesInMillis = 5000
 }
+
+// ./gradlew signMavenJavaPublication publish closeAndReleaseRepository
