@@ -8,6 +8,8 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 ## Table of Contents
 
   - [Prerequisites](#prerequisites)
+  - [Testing](#testing)
+  - [Code Coverage](#code-coverage)
   - [AWS Java SDK v1 and v2](#aws-java-sdk-v1-and-v2)
   - [Summary](#summary)
   - [Reportable Metrics](#reportable-metrics)
@@ -22,6 +24,16 @@ This is a CloudWatch Reporter for the stable version of Dropwizard Metrics (form
 ### Prerequisites
 
 - Java 1.8
+
+### Testing
+
+* `./gradlew test` runs unit tests
+
+### Code Coverage
+
+A code coverage report will be generated under `build/reports/jacoco/html/`. You need to open `index.html` in a browser.
+
+* `./gradlew clean jacocoTestReport`
 
 ### AWS Java SDK v1 and v2
 
