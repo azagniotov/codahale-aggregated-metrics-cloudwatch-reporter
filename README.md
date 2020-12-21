@@ -147,11 +147,13 @@ The following is an example how to include the library in your project using Gra
 
 ```
 repositories {
-    mavenCentral()
+    mavenLocal()
+    maven { url "https://repo.maven.apache.org/maven2" }
+    jcenter { url "https://jcenter.bintray.com" }
 }
 
 dependencies { 
-    compile("io.github.azagniotov:dropwizard-metrics-cloudwatch:2.0.5")
+    implementation("io.github.azagniotov:dropwizard-metrics-cloudwatch:2.0.7")
 }
 ```
 
@@ -206,6 +208,8 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 
 ### Changelog
 
+#### 2.0.7
+* Some clean up
 
 #### 2.0.6
 * PR [#37](https://github.com/azagniotov/codahale-aggregated-metrics-cloudwatch-reporter/pull/37) Update Metrics dependency to `v4.1.8` (https://github.com/madanepuri)
