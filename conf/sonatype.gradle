@@ -59,7 +59,10 @@ publishing {
 
 nexusPublishing {
     repositories {
-        sonatype()
+        sonatype {
+            username = project.findProperty('nexusUsername') ?: ''
+            password = project.findProperty('nexusPassword') ?: ''
+        }
     }
 }
 
