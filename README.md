@@ -153,7 +153,7 @@ repositories {
 }
 
 dependencies { 
-    implementation("io.github.azagniotov:dropwizard-metrics-cloudwatch:2.0.7")
+    implementation("io.github.azagniotov:dropwizard-metrics-cloudwatch:2.0.8")
 }
 ```
 
@@ -207,6 +207,9 @@ The reporter can be configured to run in `DRY RUN` mode by invoking `.withDryRun
 * https://github.com/wavefrontHQ/java/tree/master/dropwizard-metrics/3.1
 
 ### Changelog
+
+#### 2.0.8
+* Changes to `build.gradle` to ensure that upon publishing an artifact, the `dependencies` section in a generated `POM` has a `compile` scope
 
 #### 2.0.7
 * Some clean up
