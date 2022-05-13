@@ -13,7 +13,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class DimensionedName {
-    private static final Pattern dimensionPattern = Pattern.compile("([\\w.-]+)\\[([\\w\\W]+)]");
+    private static final String cgAllowed = "[\\p{ASCII}&&[^:,]]";
+    private static final String cgNonWsAllowed = "[" + cgAllowed + "&&[\\S]]";
+    static final String pToken = cgAllowed + "*" + cgNonWsAllowed + "+" + cgAllowed + "*";
+    private static final String pKeyValue = pToken + ":" + pToken;
+    private static final String pDimensions = "\\[((?:" + pKeyValue + "(?:," + pKeyValue + ")*)?)\\]";
+    static final String pNamespace = "\\s*([\\w.\\-/#:]+)\\s*";
+    static final Pattern dimensionPattern = Pattern.compile("^" + pNamespace + pDimensions + "$");
     private final String name;
     private final Map<String, Dimension> dimensions;
 
